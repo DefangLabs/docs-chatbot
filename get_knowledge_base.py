@@ -15,18 +15,6 @@ def clean_tmp(dir_path):
             else:
                 os.remove(item_path)
 
-def clean():
-    """Deletes everything in the .tmp directory."""
-    directory = "../"
-    for item in os.listdir(directory):
-        item_path = os.path.join(directory, item)
-        if os.path.isdir(item_path):
-            shutil.rmtree(item_path)
-        else:
-            os.remove(item_path)
-    print("Complete cleanup of .tmp directory is done.")
-
-
 def clone_repository(repo_url, local_dir):
     """ Clone or pull the repository based on its existence. """
     if not os.path.exists(local_dir):
@@ -217,5 +205,5 @@ if __name__ == "__main__":
     run_prebuild_script()
     cleanup()
     parse_markdown()  # Start parsing logic after all setups
-    clean()
+    clean_tmp('../../.tmp')
     print("All processes completed successfully.")
