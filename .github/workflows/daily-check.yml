@@ -1,0 +1,42 @@
+name: Daily Check for Updates in Public Repo
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Runs every day at 00:00 UTC
+  workflow_dispatch: # Allows you to manually trigger the workflow
+
+jobs:
+  check-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get latest commit SHA
+        id: get_commit
+        run: |
+          # Fetch the latest commit SHA from the DefangLabs/defang-docs repository
+          latest_commit=$(curl -s https://api.github.com/repos/DefangLabs/defang-docs/commits | jq -r '.[0].sha')
+          echo "Latest commit SHA: $latest_commit"
+          echo "::set-output name=sha::$latest_commit"
+
+      - name: Check if commit is new
+        id: check_commit
+        run: |
+          # Compare the latest commit SHA with the previously saved SHA
+          if [ "$latest_commit" == "$(cat .last_commit)" ]; then
+            echo "No new commit found."
+            exit 0
+          else
+            echo "New commit found."
+            echo "$latest_commit" > .last_commit
+          fi
+
+      - name: Run Python script if new commit
+        if: steps.check_commit.outcome == 'success'
+        run: |
+          # Run the Python script only if a new commit was found
+          python get_knowledge_base.py
+
+      - name: Save last commit SHA
+        run: |
+          # Save the latest commit SHA for future comparisons
+          echo "$latest_commit" > .last_commit

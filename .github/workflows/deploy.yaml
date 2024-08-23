@@ -13,12 +13,12 @@ jobs:
       id-token: write
 
     steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
-    - name: Deploy
-      uses: DefangLabs/defang-github-action@v1.0.4
-      with:
-        config-env-vars: OPENAI_API_KEY
-      env:
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      - name: Deploy
+        uses: DefangLabs/defang-github-action@v1.0.4
+        with:
+          config-env-vars: OPENAI_API_KEY
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
