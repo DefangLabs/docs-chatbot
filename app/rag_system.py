@@ -10,13 +10,24 @@ import re
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class RAGSystem:
-    def __init__(self, knowledge_base):
-        self.knowledge_base = knowledge_base
+    def __init__(self, knowledge_base_path='knowledge_base.json'):
+        self.knowledge_base_path = knowledge_base_path
+        self.knowledge_base = self.load_knowledge_base()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.doc_embeddings = self.embed_knowledge_base()
 
+    def load_knowledge_base(self):
+        """
+        Load the knowledge base from a JSON file.
+        """
+        with open(self.knowledge_base_path, 'r') as kb_file:
+            return json.load(kb_file)
+
     def embed_knowledge_base(self):
-        # Combine the 'about' and 'text' fields for embedding
+        """
+        Embed the knowledge base using the SentenceTransformer model.
+        Combines 'about' and 'text' fields for each document for embedding.
+        """
         docs = [f'{doc["about"]}. {doc["text"]}' for doc in self.knowledge_base]
         return self.model.encode(docs, convert_to_tensor=True)
 
@@ -126,8 +137,14 @@ class RAGSystem:
             print(f"Error in answer_query: {e}")
             return "An error occurred while generating the response."
 
-# Load knowledge base from a JSON file
-with open('knowledge_base.json', 'r') as kb_file:
-    knowledge_base = json.load(kb_file)
+    def rebuild_embeddings(self):
+        """
+        Rebuild the embeddings for the knowledge base. This should be called whenever the knowledge base is updated.
+        """
+        print("Rebuilding embeddings for the knowledge base...")
+        self.knowledge_base = self.load_knowledge_base()  # Reload the knowledge base
+        self.doc_embeddings = self.embed_knowledge_base()  # Rebuild the embeddings
+        print("Embeddings have been rebuilt.")
 
-rag_system = RAGSystem(knowledge_base)
+# Instantiate the RAGSystem
+rag_system = RAGSystem()
