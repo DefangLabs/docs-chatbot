@@ -23,7 +23,7 @@ This sample demonstrates how to deploy a Flask-based Retrieval-Augmented Generat
 ## Configuration
 
 - The knowledge base is acquired via parsing an sitemap located at "https://docs.defang.io/sitemap.xml".
-- The file `scrape_sitemap.py` parses every webpage as specified into paragraphs and writes to `knowledge_base.json` for the RAG retrieval.
+- The file `get_knowledge_base.py` parses every webpage as specified into paragraphs and writes to `knowledge_base.json` for the RAG retrieval.
 - To obtain your own knowledge base, either use another sitemap or write your own parsing scheme to parse into knowledge_base.json.
 - A least recently used (LRU) caching scheme is also in place as can be seen in `rag_system.py`. This caches common queries to have a faster response time. Feel free to adjust as needed.
 
