@@ -1,6 +1,6 @@
 # Scikit RAG + OpenAI
 
-This sample demonstrates how to deploy a Flask-based Retrieval-Augmented Generation (RAG) chatbot using OpenAI's GPT model. The chatbot retrieves relevant documents from a knowledge base using scikit-learn and Sentence Transformers and then generates responses using OpenAI's GPT model. There is an LRU caching scheme of 128 queries.
+This sample demonstrates how to deploy a Flask-based Retrieval-Augmented Generation (RAG) chatbot using OpenAI's GPT model. The chatbot retrieves relevant documents from a knowledge base using scikit-learn and Sentence Transformers and then generates responses using OpenAI's GPT model.
 
 ## Prerequisites
 
@@ -18,20 +18,20 @@ This sample demonstrates how to deploy a Flask-based Retrieval-Augmented Generat
 
 1. Clone the repository.
 2. Create a `.env` file in the root directory and set your OpenAI API key or add the OPENAI_API_KEY into your .zshrc or .bashrc file:
-3. Run the command `docker compose up --build` to spin up a docker container for this RAG chatbot
+3. Run the command `docker compose -f compose.dev.yaml up --build` to spin up a docker container for this RAG chatbot
 
 ## Configuration
 
-- The knowledge base is acquired via parsing an sitemap located at "https://docs.defang.io/sitemap.xml".
+- The knowledge base is the all the markdown files in the defang docs [website](https://docs.defang.io/docs/intro). The logic for parsing can be found in './app/get_knowledge_base.py'.
 - The file `get_knowledge_base.py` parses every webpage as specified into paragraphs and writes to `knowledge_base.json` for the RAG retrieval.
-- To obtain your own knowledge base, either use another sitemap or write your own parsing scheme to parse into knowledge_base.json.
-- A least recently used (LRU) caching scheme is also in place as can be seen in `rag_system.py`. This caches common queries to have a faster response time. Feel free to adjust as needed.
+- To obtain your own knowledge base, please feel free to implement your own parsing scheme.
+- for local development, please use the compose.dev.yaml file where as for production, please use the compose.yaml.
 
 ---
 
 Title: Scikit RAG + OpenAI
 
-Short Description: A short hello world application demonstrating how to deploy a Flask-based Retrieval-Augmented Generation (RAG) chatbot using OpenAI's GPT model onto Defang.
+Description: An application demonstrating a GPT-4-based chatbot enhanced with a Retrieval-Augmented Generation (RAG) framework, leveraging scikit-learn for efficient contextual embeddings and dynamic knowledge retrieval.
 
 Tags: Flask, Scikit, Python, RAG, OpenAI, GPT, Machine Learning
 
