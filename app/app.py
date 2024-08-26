@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify, render_template
+import subprocess
+import os
 from rag_system import rag_system
 
 app = Flask(__name__)
@@ -34,19 +36,36 @@ def ask():
     
 
 # New endpoint for triggering the rebuild
+def run_get_knowledge_base_script():
+    """ Function to run the get_knowledge_base.py script from the parent directory """
+    try:
+        subprocess.run(['python', 'get_knowledge_base.py'], check=True)
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error running get_knowledge_base.py: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 @app.route('/trigger-rebuild', methods=['POST'])
 def trigger_rebuild():
     token = request.args.get('token')
-    if token != 'b75c82e0-2f47-4fcb-8b02-d66932803885 ':  # Replace with your actual token
+    if token != 'b75c82e0-2f47-4fcb-8b02-d66932803885':
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        # Call the function to rebuild embeddings or whatever process is needed
+        print("Running get_knowledge_base.py script...")
+        run_get_knowledge_base_script()
+        print("Finished running get_knowledge_base.py script.")
+
+        print("Rebuilding embeddings...")
         rag_system.rebuild_embeddings()
+        print("Finished rebuilding embeddings.")
+
         return jsonify({"status": "Rebuild triggered successfully"}), 200
     except Exception as e:
         print(f"Error in /trigger-rebuild endpoint: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
 
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
