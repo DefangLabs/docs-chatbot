@@ -147,7 +147,7 @@ def parse_markdown_file_to_json(file_path):
             current_id += 1
 
     # Write the augmented JSON output to knowledge_base.json
-    with open('../knowledge_base.json', 'w', encoding='utf-8') as output_file:
+    with open('./knowledge_base.json', 'w', encoding='utf-8') as output_file:
         json.dump(json_output, output_file, indent=2, ensure_ascii=False)
 
 def parse_cli_markdown(file_path):
@@ -205,6 +205,8 @@ if __name__ == "__main__":
     run_prebuild_script()
     cleanup()
     os.chdir('../../')
+    print(os.listdir('.'))
     parse_markdown()  # Start parsing logic after all setups
+    print(os.listdir('.'))
     clean_tmp('./.tmp')
     print("All processes completed successfully.")
