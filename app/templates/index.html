@@ -18,10 +18,12 @@
                 linear-gradient(54deg, hsla(4, 100%, 74%, .25), hsla(4, 100%, 74%, 0) 28%),
                 linear-gradient(241deg, rgba(228, 122, 255, .32), #d4f0f8 36%);
             color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .chat-container {
-            width: 90%;
+            width: 100%;
             max-width: 600px;
             background-color: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -35,6 +37,7 @@
             color: #fff;
             margin-bottom: 20px;
             font-weight: 300;
+            font-size: 1.5rem;
         }
 
         .chat-box {
@@ -46,20 +49,21 @@
             overflow-y: auto;
             margin-bottom: 20px;
             color: #f5f5f5;
-            font-size: 16px;
+            font-size: 1rem;
             line-height: 1.6;
             word-wrap: break-word;
-            white-space: pre-wrap; /* Ensures text wraps correctly */
+            white-space: pre-wrap;
         }
 
         .input-box {
-            width: calc(100% - 22px);
+            width: 100%;
             padding: 10px;
             border: none;
             border-radius: 5px;
             margin-bottom: 10px;
-            font-size: 16px;
+            font-size: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
         }
 
         .submit-btn {
@@ -69,12 +73,13 @@
             color: white;
             cursor: pointer;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 1rem;
             transition: background-color 0.3s, transform 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
+            box-sizing: border-box;
         }
 
         .submit-btn:hover {
@@ -100,6 +105,36 @@
 
             100% {
                 transform: rotate(360deg);
+            }
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 1.2rem;
+            }
+
+            .chat-box {
+                font-size: 0.9rem;
+            }
+
+            .submit-btn {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h2 {
+                font-size: 1rem;
+            }
+
+            .chat-box {
+                font-size: 0.8rem;
+                max-height: 200px;
+            }
+
+            .submit-btn {
+                font-size: 0.8rem;
             }
         }
     </style>
