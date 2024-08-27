@@ -51,21 +51,28 @@ def trigger_rebuild():
     token = request.args.get('token')
     if token != 'b75c82e0-2f47-4fcb-8b02-d66932803885':
         return jsonify({"error": "Unauthorized"}), 401
-    
     try:
         print("Running get_knowledge_base.py script...")
-        run_get_knowledge_base_script()
+        result = subprocess.run(["python3", "get_knowledge_base.py"], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Error running get_knowledge_base.py script: {result.stderr}")
+            return jsonify({"error": "Error running get_knowledge_base.py script", "details": result.stderr}), 500
+
         print("Finished running get_knowledge_base.py script.")
 
         print("Rebuilding embeddings...")
-        rag_system.rebuild_embeddings()
-        print("Finished rebuilding embeddings.")
+        try:
+            rag_system.rebuild_embeddings()
+        except Exception as e:
+            print(f"Error rebuilding embeddings: {str(e)}")
+            return jsonify({"error": "Error rebuilding embeddings", "details": str(e)}), 500
 
+        print("Finished rebuilding embeddings.")
         return jsonify({"status": "Rebuild triggered successfully"}), 200
+
     except Exception as e:
         print(f"Error in /trigger-rebuild endpoint: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
-
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

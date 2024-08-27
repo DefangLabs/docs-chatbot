@@ -133,7 +133,7 @@ class RAGSystem:
                 "When generating the answer, please put the answer first and the justification later. "
                 "Any mentions of BYOD means BRING YOUR OWN DOMAIN and NOT BRING YOUR OWN DEVICE."
                 "Your objective is to remain strictly within the confines of the given context unless comparisons to other services are explicitly mentioned. "
-                "Although this rarely happens, if the prompt is not related to defang reply with prompt out of scope. If the prompt contains the word `defang` proceed with answering"
+                "Although this rarely happens, if the prompt is not related to defang reply with prompt out of scope. If the prompt contains the word `defang` or mentions `defang` in any way proceed with answering"
                 "\n\nContext:\n" + context + "\n\n"
                 "User Question: " + query + "\n\n"
                 "Answer:"
