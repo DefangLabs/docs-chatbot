@@ -25,7 +25,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs
 
 # Install uWSGI and GitPython
-RUN pip install uwsgi gitpython
+RUN pip install uwsgi gitpython redis
 
 # Copy the requirements file first to leverage Docker's cache
 COPY requirements.txt /app/

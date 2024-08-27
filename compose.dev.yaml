@@ -1,5 +1,11 @@
 services:
-  rag-chatbot-2:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+
+  rag-chatbot:
     build:
       context: ./app
       shm_size: "16gb"
@@ -11,7 +17,11 @@ services:
     environment:
       FLASK_APP: app.py
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     command: flask run --host=0.0.0.0
+    depends_on:
+      - redis
     deploy:
       resources:
         reservations:

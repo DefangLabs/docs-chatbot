@@ -5,31 +5,61 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import re
+import redis
 
 # Ensure you have set the OPENAI_API_KEY in your environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class RAGSystem:
-    def __init__(self, knowledge_base_path='knowledge_base.json'):
-        self.knowledge_base_path = knowledge_base_path
-        self.knowledge_base = self.load_knowledge_base()
+    def __init__(self, redis_host=None, redis_port=None):
+        # Use environment variables to determine Redis host and port
+        if redis_host is None:
+            redis_host = os.getenv('REDIS_HOST', 'localhost')
+        if redis_port is None:
+            redis_port = int(os.getenv('REDIS_PORT', 6379))
+        
+        self.redis_client = redis.StrictRedis(host=redis_host, port=redis_port, decode_responses=True)
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.doc_embeddings = self.embed_knowledge_base()
+        
+        # Load knowledge base and embeddings
+        self.load_knowledge_base()
 
     def load_knowledge_base(self):
         """
-        Load the knowledge base from a JSON file.
+        Load the knowledge base from a JSON file and store each document with its embedding in Redis under a single key.
         """
-        with open(self.knowledge_base_path, 'r') as kb_file:
-            return json.load(kb_file)
+        knowledge_base_keys = self.redis_client.keys('doc:*')
 
-    def embed_knowledge_base(self):
+        if not knowledge_base_keys:
+            print("No knowledge base found in Redis. Loading from JSON and storing in Redis...")
+
+            with open('knowledge_base.json', 'r') as kb_file:
+                knowledge_base = json.load(kb_file)
+
+                # Store each document with its embedding in Redis under a single key
+                for doc in knowledge_base:
+                    doc_key = f'doc:{doc["id"]}'
+                    doc_embedding = self.model.encode(f'{doc["about"]}. {doc["text"]}').tolist()
+
+                    # Store everything as a single JSON object
+                    self.redis_client.set(doc_key, json.dumps({
+                        "about": doc["about"],
+                        "text": doc["text"],
+                        "embedding": doc_embedding
+                    }))
+
+        else:
+            print("Knowledge base already loaded in Redis.")
+
+    def get_doc_by_id(self, doc_id):
         """
-        Embed the knowledge base using the SentenceTransformer model.
-        Combines 'about' and 'text' fields for each document for embedding.
+        Retrieve a document and its embedding by its ID from Redis.
         """
-        docs = [f'{doc["about"]}. {doc["text"]}' for doc in self.knowledge_base]
-        return self.model.encode(docs, convert_to_tensor=True)
+        doc_data = self.redis_client.get(f'doc:{doc_id}')
+        if doc_data:
+            return json.loads(doc_data)
+        else:
+            return None
 
     def normalize_query(self, query):
         """
@@ -43,38 +73,46 @@ class RAGSystem:
         print(f"Retrieving context for query: '{normalized_query}'")
 
         # Query embedding
-        query_embedding = self.model.encode([normalized_query], convert_to_tensor=True)
-
-        # Calculate similarities
-        similarities = cosine_similarity(query_embedding, self.doc_embeddings)[0]
+        query_embedding = self.model.encode([normalized_query])[0]
 
         # Initialize relevance scores
         relevance_scores = []
 
-        for i, doc in enumerate(self.knowledge_base):
-            # Calculate about and text similarities separately
-            about_similarity = cosine_similarity(query_embedding, self.model.encode([doc["about"]]))[0][0]
-            text_similarity = similarities[i]  # Already calculated
-            
+        for doc_key in self.redis_client.keys('doc:*'):
+            doc_id = doc_key.split(":")[1]
+            doc_data = self.get_doc_by_id(doc_id)
+
+            if not doc_data:
+                continue
+
+            doc_embedding = np.array(doc_data["embedding"])
+
+            # Calculate similarities
+            similarity = cosine_similarity([query_embedding], [doc_embedding])[0][0]
+
+            # Calculate about similarity separately
+            about_similarity = cosine_similarity([query_embedding], self.model.encode([doc_data["about"]]))[0][0]
+
             # Give more weight to text similarity
-            combined_score = (0.3 * about_similarity) + (0.7 * text_similarity)
-            
+            combined_score = (0.3 * about_similarity) + (0.7 * similarity)
+
             # If either about or text similarity is above the high match threshold, prioritize it
-            if about_similarity >= high_match_threshold or text_similarity >= high_match_threshold:
-                combined_score = max(about_similarity, text_similarity)
-                
-            relevance_scores.append((i, combined_score))
+            if about_similarity >= high_match_threshold or similarity >= high_match_threshold:
+                combined_score = max(about_similarity, similarity)
+
+            relevance_scores.append((doc_id, combined_score))
 
         # Sort by combined score in descending order
         sorted_indices = sorted(relevance_scores, key=lambda x: x[1], reverse=True)
-        top_indices = [i for i, score in sorted_indices[:max_docs] if score >= similarity_threshold]
+        top_indices = [doc_id for doc_id, score in sorted_indices[:max_docs] if score >= similarity_threshold]
 
         # Retrieve the most relevant documents, including both 'about' and 'text' fields
-        retrieved_docs = [f'{self.knowledge_base[i]["about"]}. {self.knowledge_base[i]["text"]}' for i in top_indices]
+        retrieved_docs = [f'{self.get_doc_by_id(doc_id)["about"]}. {self.get_doc_by_id(doc_id)["text"]}' for doc_id in top_indices]
 
         if not retrieved_docs:
-            max_index = np.argmax(similarities)
-            retrieved_docs.append(f'{self.knowledge_base[max_index]["about"]}. {self.knowledge_base[max_index]["text"]}')
+            max_index = np.argmax([score for _, score in relevance_scores])
+            max_doc_id = relevance_scores[max_index][0]
+            retrieved_docs.append(f'{self.get_doc_by_id(max_doc_id)["about"]}. {self.get_doc_by_id(max_doc_id)["text"]}')
 
         context = "\n\n".join(retrieved_docs)
         print("Retrieved Context:\n", context)
@@ -142,8 +180,7 @@ class RAGSystem:
         Rebuild the embeddings for the knowledge base. This should be called whenever the knowledge base is updated.
         """
         print("Rebuilding embeddings for the knowledge base...")
-        self.knowledge_base = self.load_knowledge_base()  # Reload the knowledge base
-        self.doc_embeddings = self.embed_knowledge_base()  # Rebuild the embeddings
+        self.load_knowledge_base()  # Reload the knowledge base and rebuild the embeddings
         print("Embeddings have been rebuilt.")
 
 # Instantiate the RAGSystem
