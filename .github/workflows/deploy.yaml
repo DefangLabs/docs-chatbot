@@ -6,15 +6,30 @@ on:
       - main
 
 jobs:
-  deploy:
+  deploy-production:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
+    environment: production
 
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials for CI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-west-2
+          role-to-assume: arn:aws:iam::488659951590:role/ci-role-d4fe904 # ciRoleArn from defang-io/infrastructure stack
+
+      - name: Configure AWS Credentials for Corp Website Account
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-chaining: true
+          role-duration-seconds: 1200
+          role-to-assume: arn:aws:iam::407839483216:role/admin
 
       - name: Deploy
         uses: DefangLabs/defang-github-action@v1.0.4
