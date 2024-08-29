@@ -32,8 +32,9 @@ jobs:
           role-to-assume: arn:aws:iam::407839483216:role/admin
 
       - name: Deploy
-        uses: DefangLabs/defang-github-action@v1.0.4
+        uses: DefangLabs/defang-github-action@v1.0.9
         with:
           config-env-vars: OPENAI_API_KEY
+          
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
