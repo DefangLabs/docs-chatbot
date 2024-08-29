@@ -1,6 +1,6 @@
 services:
   rag-chatbot:
-    domainname: chat.defang.io
+    domainname: ask.defang.io
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     build:
       context: ./app
