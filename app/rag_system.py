@@ -28,28 +28,25 @@ class RAGSystem:
         """
         Load the knowledge base from a JSON file and store each document with its embedding in Redis under a single key.
         """
-        knowledge_base_keys = self.redis_client.keys('doc:*')
+        print("Loading knowledge base from JSON and storing in Redis...")
 
-        if not knowledge_base_keys:
-            print("No knowledge base found in Redis. Loading from JSON and storing in Redis...")
+        with open('knowledge_base.json', 'r') as kb_file:
+            knowledge_base = json.load(kb_file)
 
-            with open('knowledge_base.json', 'r') as kb_file:
-                knowledge_base = json.load(kb_file)
+            # Store each document with its embedding in Redis under a single key
+            for doc in knowledge_base:
+                doc_key = f'doc:{doc["id"]}'
+                doc_embedding = self.model.encode(f'{doc["about"]}. {doc["text"]}').tolist()
 
-                # Store each document with its embedding in Redis under a single key
-                for doc in knowledge_base:
-                    doc_key = f'doc:{doc["id"]}'
-                    doc_embedding = self.model.encode(f'{doc["about"]}. {doc["text"]}').tolist()
+                # Store everything as a single JSON object
+                self.redis_client.set(doc_key, json.dumps({
+                    "about": doc["about"],
+                    "text": doc["text"],
+                    "embedding": doc_embedding
+                }))
 
-                    # Store everything as a single JSON object
-                    self.redis_client.set(doc_key, json.dumps({
-                        "about": doc["about"],
-                        "text": doc["text"],
-                        "embedding": doc_embedding
-                    }))
+        print("Knowledge base has been reloaded and stored in Redis.")
 
-        else:
-            print("Knowledge base already loaded in Redis.")
 
     def get_doc_by_id(self, doc_id):
         """
