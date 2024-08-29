@@ -1,12 +1,4 @@
 services:
-  redisx:
-    image: redis:6.2
-    x-defang-redis: true
-    restart: unless-stopped
-    ports:
-      - mode: host
-        target: 6379
-
   rag-chatbot:
     build:
       context: ./app
@@ -19,8 +11,6 @@ services:
     environment:
       FLASK_APP: app.py
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
-      REDIS_HOST: redisx # Use the service name of your Redis instance
-      REDIS_PORT: 6379 # Default Redis port
     command: uwsgi --http 0.0.0.0:5000 --wsgi-file app.py --callable app --processes 4 --threads 2
     deploy:
       resources:

@@ -1,0 +1,2 @@
+generated_response = response['choices'][0]['message']['content'].strip()
+            full_response = f"Context:\n{context}\n\nGenerated Response:\n{generated_response}"

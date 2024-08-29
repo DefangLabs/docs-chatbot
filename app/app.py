@@ -35,16 +35,16 @@ def ask():
         return jsonify({"error": "Internal Server Error"}), 500
     
 
-# New endpoint for triggering the rebuild
-def run_get_knowledge_base_script():
-    """ Function to run the get_knowledge_base.py script from the parent directory """
-    try:
-        subprocess.run(['python', 'get_knowledge_base.py'], check=True)
+# # New endpoint for triggering the rebuild
+# def run_get_knowledge_base_script():
+#     """ Function to run the get_knowledge_base.py script from the parent directory """
+#     try:
+#         subprocess.run(['python', 'get_knowledge_base.py'], check=True)
 
-    except subprocess.CalledProcessError as e:
-        print(f"Error running get_knowledge_base.py: {e}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+#     except subprocess.CalledProcessError as e:
+#         print(f"Error running get_knowledge_base.py: {e}")
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
 
 @app.route('/trigger-rebuild', methods=['POST'])
 def trigger_rebuild():
