@@ -1,5 +1,6 @@
 services:
   rag-chatbot:
+    retart: always
     domainname: ask.defang.io
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     build:
@@ -25,4 +26,4 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      #start_period: 40s
