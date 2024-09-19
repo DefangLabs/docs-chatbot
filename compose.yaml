@@ -1,6 +1,6 @@
 services:
   rag-chatbot:
-    retart: always
+    restart: always
     domainname: ask.defang.io
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     build:
