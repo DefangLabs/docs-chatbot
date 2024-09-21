@@ -19,8 +19,8 @@ services:
       resources:
         reservations:
           memory: 4G
-          devices:
-            - capabilities: ["gpu"]
+          # devices:
+          #   - capabilities: ["gpu"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]
       interval: 30s
