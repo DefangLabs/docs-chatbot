@@ -4,7 +4,6 @@ import os
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-import re
 
 # Ensure you have set the OPENAI_API_KEY in your environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -15,6 +14,7 @@ class RAGSystem:
         self.knowledge_base = self.load_knowledge_base()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.doc_embeddings = self.embed_knowledge_base()
+        self.conversation_history = []  # To store the conversation history
 
     def load_knowledge_base(self):
         """
@@ -38,7 +38,9 @@ class RAGSystem:
         return query.lower().strip()
 
     def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5):
-        # Normalize query
+        """
+        Retrieve relevant documents from the knowledge base using cosine similarity.
+        """
         normalized_query = self.normalize_query(query)
         print(f"Retrieving context for query: '{normalized_query}'")
 
@@ -52,24 +54,18 @@ class RAGSystem:
         relevance_scores = []
 
         for i, doc in enumerate(self.knowledge_base):
-            # Calculate about and text similarities separately
             about_similarity = cosine_similarity(query_embedding, self.model.encode([doc["about"]]))[0][0]
-            text_similarity = similarities[i]  # Already calculated
+            text_similarity = similarities[i]
             
-            # Give more weight to text similarity
             combined_score = (0.3 * about_similarity) + (0.7 * text_similarity)
-            
-            # If either about or text similarity is above the high match threshold, prioritize it
             if about_similarity >= high_match_threshold or text_similarity >= high_match_threshold:
                 combined_score = max(about_similarity, text_similarity)
                 
             relevance_scores.append((i, combined_score))
 
-        # Sort by combined score in descending order
         sorted_indices = sorted(relevance_scores, key=lambda x: x[1], reverse=True)
         top_indices = [i for i, score in sorted_indices[:max_docs] if score >= similarity_threshold]
 
-        # Retrieve the most relevant documents, including both 'about' and 'text' fields
         retrieved_docs = [f'{self.knowledge_base[i]["about"]}. {self.knowledge_base[i]["text"]}' for i in top_indices]
 
         if not retrieved_docs:
@@ -82,44 +78,47 @@ class RAGSystem:
         return context
 
     def generate_response(self, query, context):
-        # Normalize query
-        normalized_query = self.normalize_query(query)
-        print(f"Generating response for query: '{normalized_query}'")
+        """
+        Generate a response from OpenAI using conversation history and knowledge base context.
+        """
+        # Add user query to conversation history
+        self.conversation_history.append({"role": "user", "content": query})
 
-        try:
-            prompt = (
+        # Include conversation history in the prompt
+        messages = [{"role": "system", "content": "You are a helpful assistant."}]
+        messages.extend(self.conversation_history)  # Include past conversation history
+
+        # Prepare the context from the knowledge base
+        system_message = {
+            "role": "system",
+            "content": (
                 "You are a dedicated assistant designed to provide positive answers about Defang. "
-                "When the user says 'you', 'your', or any pronoun, interpret it as referring to Defang with context of Defang also. "
+                "When the user says 'you', 'your', or any pronoun, interpret it as referring to Defang with context of Defang. "
                 "If the user's question involves comparisons with or references to other services, you may use external knowledge. "
                 "However, if the question is strictly about Defang, you must ignore all external knowledge and only utilize the given context. "
-                "When generating the answer, please put the answer first and the justification later. "
-                "Any mentions of BYOD means BRING YOUR OWN DOMAIN and NOT BRING YOUR OWN DEVICE."
-                "Your objective is to remain strictly within the confines of the given context unless comparisons to other services are explicitly mentioned. "
-                "Although this rarely happens, if the prompt is not related to defang reply with prompt out of scope. If the prompt contains the word `defang` proceed with answering"
-                "\n\nContext:\n" + context + "\n\n"
-                "User Question: " + query + "\n\n"
-                "Answer:"
+                "Context: " + context
             )
+        }
 
+        messages.append(system_message)
+
+        try:
             response = openai.ChatCompletion.create(
                 model="gpt-4-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": normalized_query}
-                ],
-                temperature=0.05,
+                messages=messages,
+                temperature=0.5,
                 max_tokens=2048,
                 top_p=1,
                 frequency_penalty=0,
                 presence_penalty=0
             )
 
-            # Print the response generated by the model
             generated_response = response['choices'][0]['message']['content'].strip()
 
-            print("Generated Response:\n", generated_response)
+            # Add the bot's response to the conversation history
+            self.conversation_history.append({"role": "assistant", "content": generated_response})
 
+            print("Generated Response:\n", generated_response)
             return generated_response
 
         except openai.error.OpenAIError as e:
@@ -127,8 +126,10 @@ class RAGSystem:
             return "An error occurred while generating the response."
 
     def answer_query(self, query):
+        """
+        Answer the user query, leveraging knowledge base context and conversation history.
+        """
         try:
-            # Normalize query before use
             normalized_query = self.normalize_query(query)
             context = self.retrieve(normalized_query)
             response = self.generate_response(normalized_query, context)
@@ -136,6 +137,14 @@ class RAGSystem:
         except Exception as e:
             print(f"Error in answer_query: {e}")
             return "An error occurred while generating the response."
+
+    def clear_conversation_history(self):
+        """
+        Clear the stored conversation history.
+        This can be called to reset the conversation for a new session.
+        """
+        self.conversation_history = []
+        print("Conversation history cleared.")
 
     def rebuild_embeddings(self):
         """
