@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -99,110 +98,108 @@
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Media Queries for Responsiveness */
         @media (max-width: 768px) {
-            h2 {
-                font-size: 1.2rem;
-            }
-
-            .chat-box {
-                font-size: 0.9rem;
-            }
-
-            .submit-btn {
-                font-size: 0.9rem;
-            }
+            h2 { font-size: 1.2rem; }
+            .chat-box { font-size: 0.9rem; }
+            .submit-btn { font-size: 0.9rem; }
         }
 
         @media (max-width: 480px) {
-            h2 {
-                font-size: 1rem;
-            }
-
-            .chat-box {
-                font-size: 0.8rem;
-                max-height: 200px;
-            }
-
-            .submit-btn {
-                font-size: 0.8rem;
-            }
+            h2 { font-size: 1rem; }
+            .chat-box { font-size: 0.8rem; max-height: 200px; }
+            .submit-btn { font-size: 0.8rem; }
         }
     </style>
 </head>
-
 <body>
     <div class="chat-container">
         <h2>Ask Defang</h2>
-        <div class="chat-box" id="chat-box">
-            <!-- Chat content will be dynamically inserted here -->
-        </div>
-        <form id="chat-form">
-            <input type="text" id="query" class="input-box" placeholder="Ask a question..." required>
-            <button type="submit" class="submit-btn">
-                Send
-                <div class="loading-spinner" id="loading-spinner"></div>
-            </button>
-        </form>
-        <div id="response"></div>
+        <div id="chat-box" class="chat-box"></div>
+        <input type="text" id="query-input" class="input-box" placeholder="Ask a question...">
+        <button id="send-button" class="submit-btn">
+            Send
+            <div id="loading-spinner" class="loading-spinner"></div>
+        </button>
     </div>
 
-    <!-- Include Marked.js for markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        document.getElementById("chat-form").addEventListener("submit", async function (event) {
-            event.preventDefault();
-            const query = document.getElementById("query").value;
-            const chatBox = document.getElementById("chat-box");
-            const loadingSpinner = document.getElementById("loading-spinner");
-            const inputBox = document.getElementById("query");
-            const submitButton = document.querySelector(".submit-btn");
+        const chatBox = document.getElementById('chat-box');
+        const queryInput = document.getElementById('query-input');
+        const sendButton = document.getElementById('send-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
 
-            // Disable input and submit button
-            inputBox.disabled = true;
-            submitButton.disabled = true;
-
-            // Show the loading spinner
-            loadingSpinner.style.display = "inline-block";
-
-            const response = await fetch("/ask", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ query })
-            });
-
-            const data = await response.json();
-
-            // Hide the loading spinner
-            loadingSpinner.style.display = "none";
-
-            // Convert the response from markdown to HTML
-            const markdownContent = marked.parse(data.response);
-
-            // Append the query and response to the chat box, converting markdown to HTML
-            chatBox.innerHTML += `<strong>You:</strong> ${query}<br><strong>Bot:</strong> ${markdownContent}<br><br>`;
-
-            // Clear the input field
-            inputBox.value = "";
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the bottom
-
-            // Re-enable input and submit button
-            inputBox.disabled = false;
-            submitButton.disabled = false;
-            inputBox.focus();
+        sendButton.addEventListener('click', sendQuery);
+        queryInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendQuery();
+            }
         });
+
+        function sendQuery() {
+            const query = queryInput.value.trim();
+            if (query === '') return;
+
+            // Display user query
+            chatBox.innerHTML += `<p><strong>You:</strong> ${query}</p>`;
+            
+            // Create a new response container for this query
+            const responseContainer = document.createElement('p');
+            responseContainer.innerHTML = `<strong>Assistant:</strong> <span class="assistant-response"></span>`;
+            chatBox.appendChild(responseContainer);
+            const assistantResponse = responseContainer.querySelector('.assistant-response');
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Clear input and show loading spinner
+            queryInput.value = '';
+            loadingSpinner.style.display = 'inline-block';
+            sendButton.disabled = true;
+
+            // Send query to server
+            fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query }),
+            })
+            .then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let responseText = '';
+
+                function readStream() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            loadingSpinner.style.display = 'none';
+                            sendButton.disabled = false;
+                            return;
+                        }
+
+                        const chunk = decoder.decode(value);
+                        responseText += chunk;
+                        assistantResponse.textContent = responseText;
+                        chatBox.scrollTop = chatBox.scrollHeight;
+
+                        readStream();
+                    });
+                }
+
+                readStream();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingSpinner.style.display = 'none';
+                sendButton.disabled = false;
+                assistantResponse.textContent = 'Error: Failed to get response';
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
     </script>
 </body>
-
 </html>
