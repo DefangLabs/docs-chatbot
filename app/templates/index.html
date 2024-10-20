@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ask Defang</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -51,7 +52,22 @@
             font-size: 1rem;
             line-height: 1.6;
             word-wrap: break-word;
-            white-space: pre-wrap;
+        }
+
+        .chat-box p {
+            margin-bottom: 10px;
+        }
+
+        .chat-box pre {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        .chat-box code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
         }
 
         .input-box {
@@ -183,7 +199,7 @@
 
                         const chunk = decoder.decode(value);
                         responseText += chunk;
-                        assistantResponse.textContent = responseText;
+                        assistantResponse.innerHTML = marked.parse(responseText);
                         chatBox.scrollTop = chatBox.scrollHeight;
 
                         readStream();

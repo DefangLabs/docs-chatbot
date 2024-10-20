@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 from rag_system import rag_system
-
+import subprocess
 app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
@@ -22,7 +22,7 @@ def ask():
             print(f"Error in /ask endpoint: {e}")
             yield "Internal Server Error"
 
-    return Response(stream_with_context(generate()), content_type='text/plain')
+    return Response(stream_with_context(generate()), content_type='text/markdown')
 
 @app.route('/trigger-rebuild', methods=['POST'])
 def trigger_rebuild():
