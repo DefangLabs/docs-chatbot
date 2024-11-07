@@ -44,8 +44,8 @@
             background-color: rgba(0, 0, 0, 0.2);
             padding: 15px;
             border-radius: 10px;
-            min-height: 150px;
-            max-height: 300px;
+            min-height: 187.5px; /* 150px * 1.25 */
+            max-height: 375px; /* 300px * 1.25 */
             overflow-y: auto;
             margin-bottom: 20px;
             color: #f5f5f5;
@@ -127,7 +127,7 @@
 
         @media (max-width: 480px) {
             h2 { font-size: 1rem; }
-            .chat-box { font-size: 0.8rem; max-height: 200px; }
+            .chat-box { font-size: 0.8rem; max-height: 250px; } /* 200px * 1.25 */
             .submit-btn { font-size: 0.8rem; }
         }
     </style>
