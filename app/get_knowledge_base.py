@@ -19,7 +19,7 @@ def clone_repository(repo_url, local_dir):
     """ Clone or pull the repository based on its existence. """
     if not os.path.exists(local_dir):
         print(f"Cloning repository into {local_dir}")
-        Repo.clone_from(repo_url, local_dir)
+        Repo.clone_from(repo_url, local_dir, depth=1)
     else:
         print(f"Repository already exists at {local_dir}. Pulling latest changes...")
         repo = Repo(local_dir)
@@ -137,7 +137,7 @@ def parse_markdown_file_to_json(file_path):
     for section in sections:
         about = ", ".join(section["about"])
         text = " ".join(line for line in section["text"] if line)
-        
+
         if about and text:  # Only insert if both 'about' and 'text' are not empty
             json_output.append({
                 "id": current_id,
