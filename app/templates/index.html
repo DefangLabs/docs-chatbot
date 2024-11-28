@@ -32,9 +32,22 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
+        .img-container {
+            height: 2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+    
+        .icon {
+          height: 2.5em;
+        }
+
         h2 {
             text-align: center;
             color: #fff;
+            margin-top: 10px;
             margin-bottom: 20px;
             font-weight: 300;
             font-size: 1.5rem;
@@ -134,6 +147,9 @@
 </head>
 <body>
     <div class="chat-container">
+        <div class="img-container">
+            <img class="icon" src="imgs/defang_icon.svg"/>
+        </div>
         <h2>Ask Defang</h2>
         <div id="chat-box" class="chat-box"></div>
         <input type="text" id="query-input" class="input-box" placeholder="Ask a question...">
