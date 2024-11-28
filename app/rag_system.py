@@ -1,6 +1,7 @@
 import openai
 import json
 import os
+from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -70,6 +71,7 @@ class RAGSystem:
                     "When the user says 'you', 'your', or any pronoun, interpret it as referring to Defang with context of Defang. "
                     "If the user's question involves comparisons with or references to other services, you may use external knowledge. "
                     "However, if the question is strictly about Defang, you must ignore all external knowledge and only utilize the given context. "
+                    "Today's date is " + date.today().strftime('%B %d, %Y') + ". "
                     "Context: " + context
                 )
             }
