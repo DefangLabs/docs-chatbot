@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 from rag_system import rag_system
 import subprocess
-app = Flask(__name__)
+app = Flask(__name__, static_folder='templates/images')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():

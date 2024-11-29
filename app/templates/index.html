@@ -6,8 +6,11 @@
     <title>Ask Defang</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap');
+    </style>
+    <style>
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -22,6 +25,10 @@
             box-sizing: border-box;
         }
 
+        input, button {
+            font-family: 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
+        }
+
         .chat-container {
             width: 100%;
             max-width: 600px;
@@ -32,9 +39,22 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
+        .img-container {
+            height: 2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+    
+        .icon {
+          height: 2.5em;
+        }
+
         h2 {
             text-align: center;
             color: #fff;
+            margin-top: 10px;
             margin-bottom: 20px;
             font-weight: 300;
             font-size: 1.5rem;
@@ -84,7 +104,7 @@
         .submit-btn {
             padding: 10px 20px;
             border: none;
-            background-color: #636ded;
+            background-color: #4491fd;
             color: white;
             cursor: pointer;
             border-radius: 5px;
@@ -98,8 +118,24 @@
         }
 
         .submit-btn:hover {
-            background-color: #5a66d6;
+            background-color: #3b7edc;
             transform: translateY(-2px);
+        }
+
+        .issue-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 10px;
+        }
+        
+        .issue-container p {
+            margin: 10px;
+        }
+        
+        .issue-container a:visited, a:hover, a:active, a:focus {
+            color: white;
+            text-decoration: none !important;
         }
 
         .loading-spinner {
@@ -134,13 +170,28 @@
 </head>
 <body>
     <div class="chat-container">
+        <div class="img-container">
+            <a href="https://defang.io/" target="_parent">
+            <img class="icon" src="{{ url_for('static', filename='defang_icon.svg') }}" alt="defang_icon"/>
+            </a>
+        </div>
         <h2>Ask Defang</h2>
         <div id="chat-box" class="chat-box"></div>
-        <input type="text" id="query-input" class="input-box" placeholder="Ask a question...">
+        <input type="text" autofocus="autofocus" id="query-input" class="input-box" placeholder="Ask a question...">
         <button id="send-button" class="submit-btn">
             Send
             <div id="loading-spinner" class="loading-spinner"></div>
         </button>
+        <div class="issue-container">
+            <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
+            <img class="icon" style="height: 1.5em" src="{{ url_for('static', filename='github_icon.svg') }}" alt="github_icon"/>
+            </a>
+            <p>
+              <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
+                Report an issue
+              </a>
+            </p>
+        </div>
     </div>
 
     <script>
