@@ -171,13 +171,13 @@
 <body>
     <div class="chat-container">
         <div class="img-container">
-            <a href="https://defang.io/" target="_blank">
+            <a href="https://defang.io/" target="_parent">
             <img class="icon" src="{{ url_for('static', filename='defang_icon.svg') }}" alt="defang_icon"/>
             </a>
         </div>
         <h2>Ask Defang</h2>
         <div id="chat-box" class="chat-box"></div>
-        <input type="text" id="query-input" class="input-box" placeholder="Ask a question...">
+        <input type="text" autofocus="autofocus" id="query-input" class="input-box" placeholder="Ask a question...">
         <button id="send-button" class="submit-btn">
             Send
             <div id="loading-spinner" class="loading-spinner"></div>
