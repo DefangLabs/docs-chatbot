@@ -122,6 +122,22 @@
             transform: translateY(-2px);
         }
 
+        .issue-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 10px;
+        }
+        
+        .issue-container p {
+            margin: 10px;
+        }
+        
+        .issue-container a:visited, a:hover, a:active, a:focus {
+            color: white;
+            text-decoration: none !important;
+        }
+
         .loading-spinner {
             display: none;
             margin-left: 10px;
@@ -155,7 +171,9 @@
 <body>
     <div class="chat-container">
         <div class="img-container">
+            <a href="https://defang.io/" target="_blank">
             <img class="icon" src="{{ url_for('static', filename='defang_icon.svg') }}" alt="defang_icon"/>
+            </a>
         </div>
         <h2>Ask Defang</h2>
         <div id="chat-box" class="chat-box"></div>
@@ -164,6 +182,16 @@
             Send
             <div id="loading-spinner" class="loading-spinner"></div>
         </button>
+        <div class="issue-container">
+            <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
+            <img class="icon" style="height: 1.5em" src="{{ url_for('static', filename='github_icon.svg') }}" alt="github_icon"/>
+            </a>
+            <p>
+              <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
+                Report an issue
+              </a>
+            </p>
+        </div>
     </div>
 
     <script>
