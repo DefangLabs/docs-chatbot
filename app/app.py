@@ -1,7 +1,16 @@
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
+from flask_wtf.csrf import CSRFProtect
 from rag_system import rag_system
 import subprocess
 app = Flask(__name__, static_folder='templates/images')
+
+import os
+
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
+
+csrf = CSRFProtect(app)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
