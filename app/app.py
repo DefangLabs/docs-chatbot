@@ -1,16 +1,26 @@
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context
 from flask_wtf.csrf import CSRFProtect
 from rag_system import rag_system
+import hashlib
 import subprocess
-app = Flask(__name__, static_folder='templates/images')
-
 import os
 
+app = Flask(__name__, static_folder='templates/images')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
 
 csrf = CSRFProtect(app)
+
+
+def validate_pow(nonce, data, difficulty):
+    # Calculate the sha256 of the concatenated string of 32-bit X-Nonce header and raw body.
+    # This calculation has to match the code on the client side, in index.html.
+    nonce_bytes = int(nonce).to_bytes(4, byteorder='little')  # 32-bit = 4 bytes
+    calculated_hash = hashlib.sha256(nonce_bytes + data).digest()
+    first_uint32 = int.from_bytes(calculated_hash[:4], byteorder='big')
+    return first_uint32 <= difficulty
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -18,11 +28,14 @@ def index():
 
 @app.route('/ask', methods=['POST'])
 def ask():
+    if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
+        return jsonify({"error": "Invalid proof of work"}), 400
+
     data = request.get_json()
     query = data.get('query')
     if not query:
         return jsonify({"error": "No query provided"}), 400
-    
+
     def generate():
         try:
             for token in rag_system.answer_query_stream(query):
