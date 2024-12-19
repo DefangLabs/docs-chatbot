@@ -5,7 +5,7 @@ services:
       shm_size: "16gb"
     ports:
       - target: 5000
-        published: 5000
+        published: 5001 # MacOS AirPlay uses port 5000
         protocol: tcp
         mode: ingress
     environment:
