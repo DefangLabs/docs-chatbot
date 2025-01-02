@@ -62,8 +62,8 @@ def ask():
         # Track the query and response 
         analytics.track(
             anonymous_id=anonymous_id, 
-            event='Form submitted', 
-            properties={'query': query, 'response': full_response}
+            event='Chatbot Question submitted', 
+            properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
         )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
