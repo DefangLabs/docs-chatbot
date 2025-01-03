@@ -1,9 +1,13 @@
-from flask import Flask, request, jsonify, render_template, Response, stream_with_context
+from flask import Flask, request, jsonify, render_template, Response, stream_with_context, session
 from flask_wtf.csrf import CSRFProtect
 from rag_system import rag_system
 import hashlib
 import subprocess
 import os
+import segment.analytics as analytics
+import uuid
+
+analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
 
 app = Flask(__name__, static_folder='templates/images')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -33,16 +37,34 @@ def ask():
 
     data = request.get_json()
     query = data.get('query')
+
     if not query:
         return jsonify({"error": "No query provided"}), 400
+    
+    # For analytics tracking, generates an anonymous id and uses it for the session
+    if 'anonymous_id' not in session:
+        session['anonymous_id'] = str(uuid.uuid4())
+    anonymous_id = session['anonymous_id']
 
     def generate():
+        full_response = ""
         try:
             for token in rag_system.answer_query_stream(query):
                 yield token
+                full_response += token
         except Exception as e:
             print(f"Error in /ask endpoint: {e}")
             yield "Internal Server Error"
+
+        if not full_response:
+            full_response = "No response generated"
+
+        # Track the query and response 
+        analytics.track(
+            anonymous_id=anonymous_id, 
+            event='Chatbot Question submitted', 
+            properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
+        )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
 
