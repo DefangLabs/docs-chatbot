@@ -69,6 +69,7 @@ def ask():
     return Response(stream_with_context(generate()), content_type='text/markdown')
 
 @app.route('/trigger-rebuild', methods=['POST'])
+@csrf.exempt
 def trigger_rebuild():
     token = request.args.get('token')
     if token != 'b75c82e0-2f47-4fcb-8b02-d66932803885':
