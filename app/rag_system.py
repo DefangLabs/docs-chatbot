@@ -31,29 +31,39 @@ class RAGSystem:
         normalized_query = self.normalize_query(query)
         query_embedding = self.model.encode([normalized_query], convert_to_tensor=True)
         similarities = cosine_similarity(query_embedding, self.doc_embeddings)[0]
-        relevance_scores = []
+        
+        relevance_scores = self.calculate_relevance_scores(query_embedding, similarities, high_match_threshold)
+        top_indices = self.get_top_indices(relevance_scores, similarity_threshold, max_docs)
+        retrieved_docs = self.get_top_docs(top_indices)
+        
+        if not retrieved_docs:
+            retrieved_docs = self.get_fallback_doc(similarities)
+        
+        return "\n\n".join(retrieved_docs)
 
+    def calculate_relevance_scores(self, query_embedding, similarities, high_match_threshold):
+        relevance_scores = []
         for i, doc in enumerate(self.knowledge_base):
             about_similarity = cosine_similarity(query_embedding, self.model.encode([doc["about"]]))[0][0]
             text_similarity = similarities[i]
-            
             combined_score = (0.3 * about_similarity) + (0.7 * text_similarity)
             if about_similarity >= high_match_threshold or text_similarity >= high_match_threshold:
                 combined_score = max(about_similarity, text_similarity)
-                
             relevance_scores.append((i, combined_score))
+        return relevance_scores
 
+    def get_top_indices(self, relevance_scores, similarity_threshold, max_docs):
         sorted_indices = sorted(relevance_scores, key=lambda x: x[1], reverse=True)
         top_indices = [i for i, score in sorted_indices[:max_docs] if score >= similarity_threshold]
+        return top_indices
 
-        retrieved_docs = [f'{self.knowledge_base[i]["about"]}. {self.knowledge_base[i]["text"]}' for i in top_indices]
+    def get_top_docs(self, top_indices):
+        return [f'{self.knowledge_base[i]["about"]}. {self.knowledge_base[i]["text"]}' for i in top_indices]
 
-        if not retrieved_docs:
-            max_index = np.argmax(similarities)
-            retrieved_docs.append(f'{self.knowledge_base[max_index]["about"]}. {self.knowledge_base[max_index]["text"]}')
-
-        return "\n\n".join(retrieved_docs)
-
+    def get_fallback_doc(self, similarities):
+        max_index = np.argmax(similarities)
+        return [f'{self.knowledge_base[max_index]["about"]}. {self.knowledge_base[max_index]["text"]}']
+    
     def answer_query_stream(self, query):
         try:
             normalized_query = self.normalize_query(query)
@@ -116,6 +126,11 @@ class RAGSystem:
         self.knowledge_base = self.load_knowledge_base()  # Reload the knowledge base
         self.doc_embeddings = self.embed_knowledge_base()  # Rebuild the embeddings
         print("Embeddings have been rebuilt.")
+
+    def get_context(self, query):
+        normalized_query = self.normalize_query(query)
+        context = self.retrieve(normalized_query)
+        return context
 
 # Instantiate the RAGSystem
 rag_system = RAGSystem()
