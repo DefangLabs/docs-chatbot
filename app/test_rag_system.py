@@ -9,6 +9,8 @@ class TestRAGSystem(unittest.TestCase):
     def setUpClass(cls):
         cls.rag_system = RAGSystem(knowledge_base_path='test_knowledge_base.json')
         cls.rag_system.rebuild_embeddings()
+        cls.initial_embeddings = cls.rag_system.doc_embeddings.clone()
+        assert cls.initial_embeddings is not None, "Embeddings were not rebuilt properly."
         print("Successfully set up RAG System class for testing!")
 
     def test_normalize_query(self):
@@ -47,16 +49,31 @@ class TestRAGSystem(unittest.TestCase):
     #     self.assertGreater(len(result), 0)
     #     print("Test for retrieve passed successfully!")
 
-    # def test_print_relevance_scores_matrix(self):
-    #     query_embedding = self.rag_system.model.encode(["sample query"], convert_to_tensor=True)
-    #     similarities = cosine_similarity(query_embedding, self.rag_system.doc_embeddings)[0]
-    #     relevance_scores = self.rag_system.calculate_relevance_scores(query_embedding, similarities, high_match_threshold=0.8)
+    def test_print_relevance_scores_matrix(self):
+        # get embeddings and move to CPU
+        query_embedding = self.rag_system.model.encode(["Samples"], convert_to_tensor=True).cpu()
+        doc_embeddings = self.rag_system.doc_embeddings.cpu()
+
+        # get the length of query embeddings
+        self.assertEqual(len(query_embedding[0]), 384)
+
+        # get the length of doc embeddings
+        self.assertEqual(len(self.rag_system.doc_embeddings[0]), 384)
         
-    #     print("Relevance Scores Matrix:")
-    #     print("Index\tAbout\t\t\tRelevance Score")
-    #     for i, score in relevance_scores:
-    #         about = self.rag_system.knowledge_base[i]["about"]
-    #         print(f"{i}\t{about}\t{score:.4f}")
+        similarities = cosine_similarity(query_embedding, doc_embeddings)
+
+        relevance_scores = self.rag_system.calculate_relevance_scores(query_embedding, similarities, high_match_threshold=0.8)
+        for i, relevance_score in relevance_scores:
+            print(f"{i}\t\t{relevance_score:.4f}")
+        
+        print("Relevance Scores Matrix:")
+        print("Index\t\tSimilarity\tRelevance Score\t\tAbout")
+        
+        # print out similarities, abouts, and relevance scores
+        for i, similarity in enumerate(similarities):
+            about = self.rag_system.knowledge_base[i]["about"]
+            relevance_score = relevance_scores[i][1]
+            print(f"{i}\t\t{similarity.item():.4f}\t\t{relevance_score:.4f}\t\t\t{about}")
             
     #     # check if the answer gets back top 5 docs, wih their similarity scores
 
