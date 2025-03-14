@@ -63,8 +63,6 @@ class TestRAGSystem(unittest.TestCase):
         similarities = cosine_similarity(query_embedding, doc_embeddings)
 
         relevance_scores = self.rag_system.calculate_relevance_scores(query_embedding, similarities, high_match_threshold=0.8)
-        for i, relevance_score in relevance_scores:
-            print(f"{i}\t\t{relevance_score:.4f}")
         
         print("Relevance Scores Matrix:")
         print("Index\t\tSimilarity\tRelevance Score\t\tAbout")
