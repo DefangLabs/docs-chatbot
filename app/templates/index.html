@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ask Defang</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
-    <link rel="icon" href="{{ url_for('static', filename='images/defang_icon.svg') }}" type="image/svg">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap');
     </style>
@@ -40,6 +40,11 @@
 
         input, button {
             font-family: 'Guaruja Neue', 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        a:link, a:visited, a:hover, a:active {
+            color: white;
+            text-decoration: none;
         }
 
         .chat-container {
@@ -202,7 +207,7 @@
             <img class="icon" style="height: 1.5em" src="{{ url_for('static', filename='images/github_icon.svg') }}" alt="github_icon"/>
             </a>
             <p>
-              <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank" style="text-decoration: none;">
+              <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
                 Report an issue
               </a>
             </p>
