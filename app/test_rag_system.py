@@ -19,64 +19,90 @@ class TestRAGSystem(unittest.TestCase):
         self.assertEqual(normalized_query, "hello world")
         print("Test for normalize_query passed successfully!")
 
-    def test_calculate_relevance_scores(self):
-        query_embedding = self.rag_system.model.encode(["peanut butter"], convert_to_tensor=True).cpu()
-        similarities = [0.8, 0.6, 0.4] # instead of hardcoding these, get the real similarities
-        relevance_scores = self.rag_system.calculate_relevance_scores(query_embedding, similarities, high_match_threshold=0.8)
-        self.assertIsInstance(relevance_scores, list)
-        self.assertGreater(len(relevance_scores), 0)
-        print("Test for calculate_relevance_scores passed successfully!")
-
-    def test_get_top_indices(self):
-        relevance_scores = [(0, 0.9), (1, 0.7), (2, 0.5)]
-        top_indices = self.rag_system.get_top_indices(relevance_scores, similarity_threshold=0.6, max_docs=2)
-        self.assertIsInstance(top_indices, list)
-        self.assertEqual(len(top_indices), 2)
-        print("Test for get_top_indices passed successfully!")
-
     def test_get_top_docs(self):
-        top_indices = [0, 2]
-        top_docs = self.rag_system.get_top_docs(top_indices)
+        doc_scores = [
+            {"index": 0, "relevance_score": 0.9},
+            {"index": 1, "relevance_score": 0.6},
+            {"index": 2, "relevance_score": 0.7}
+        ]
+        top_docs = self.rag_system.get_top_docs(doc_scores, similarity_threshold=0.7, max_docs=2)
         self.assertIsInstance(top_docs, list)
         self.assertGreater(len(top_docs), 0)
         self.assertLessEqual(len(top_docs), 2)
+        for doc in top_docs:
+            self.assertIn("index", doc)
+            self.assertIn(doc["index"], [0, 1])
+            self.assertIn("relevance_score", doc)
         print("Test for get_top_docs passed successfully!")
 
-    # def test_retrieve(self):
-    #     query = "sample query"
-    #     result = self.rag_system.retrieve(query)
-    #     self.assertIsInstance(result, str)
-    #     self.assertGreater(len(result), 0)
-    #     print("Test for retrieve passed successfully!")
+    def test_get_query_embedding(self):
+        query = "What is Defang?"
+        query_embedding = self.rag_system.get_query_embedding(query)
+        self.assertIsNotNone(query_embedding)
+        self.assertEqual(len(query_embedding.shape), 2)  # should be a 2D tensor
+        self.assertEqual(query_embedding.shape[0], 1) # should have exactly one embedding
+        print("Test for get_query_embedding passed successfully!")
 
-    def test_print_relevance_scores_matrix(self):
-        # get embeddings and move to CPU
-        query_embedding = self.rag_system.model.encode(["Samples"], convert_to_tensor=True).cpu()
-        doc_embeddings = self.rag_system.doc_embeddings.cpu()
+    def test_get_doc_embeddings(self):
+        doc_embeddings = self.rag_system.get_doc_embeddings()
+        self.assertIsNotNone(doc_embeddings)
+        self.assertEqual(len(doc_embeddings.shape), 2)  # should be a 2D tensor
+        self.assertGreater(doc_embeddings.shape[0], 0)  # should have at least one document embedding
+        print("Test for get_doc_embeddings passed successfully!")
 
-        # get the length of query embeddings
-        self.assertEqual(len(query_embedding[0]), 384)
+    def test_retrieve_fallback(self):
+        # test a query that should return the fallback response
+        query = "Hello"
+        # set use_cpu to True, as testing has no GPU calculations
+        result = self.rag_system.retrieve(query, use_cpu=True)
+        self.assertIsInstance(result, list)
+        self.assertGreater(len(result), 0)
+        self.assertEqual(len(result), 1)  # should return one result for fallback
+        for doc in result:
+            self.assertIn("about", doc)
+            self.assertIn("text", doc)
+            self.assertEqual(doc['about'], "No Relevant Information Found")
+        print("Test for retrieve_fallback passed successfully!")
 
-        # get the length of doc embeddings
-        self.assertEqual(len(self.rag_system.doc_embeddings[0]), 384)
-        
-        similarities = cosine_similarity(query_embedding, doc_embeddings)
+    def test_retrieve_actual_response(self):
+        # test a query that should return an actual response from the knowledge base
+        query = "What is Defang?"
+        # set use_cpu to True, as testing has no GPU calculations
+        result = self.rag_system.retrieve(query, use_cpu=True)
+        self.assertIsInstance(result, list)
+        self.assertGreater(len(result), 0)
+        self.assertLessEqual(len(result), 5)  # should return up to max_docs (5)
+        for doc in result:
+            self.assertIn("about", doc)
+            self.assertIn("text", doc)
+            self.assertNotEqual(doc['about'], "No Relevant Information Found")
+        print("Test for retrieve_actual_response passed successfully!")
 
-        relevance_scores = self.rag_system.calculate_relevance_scores(query_embedding, similarities, high_match_threshold=0.8)
-        
-        print("Relevance Scores Matrix:")
-        print("Index\t\tSimilarity\tRelevance Score\t\tAbout")
-        
-        # print out similarities, abouts, and relevance scores
-        for i, similarity in enumerate(similarities):
-            about = self.rag_system.knowledge_base[i]["about"]
-            relevance_score = relevance_scores[i][1]
-            print(f"{i}\t\t{similarity.item():.4f}\t\t{relevance_score:.4f}\t\t\t{about}")
-            
-    #     # check if the answer gets back top 5 docs, wih their similarity scores
+    def test_compute_document_scores(self):
+        query = "Does Defang have an MCP sample?"
+        # get embeddings and move them to CPU, as testing has no GPU calculations
+        query_embedding = self.rag_system.get_query_embedding(query, use_cpu=True)
+        doc_embeddings = self.rag_system.get_doc_embeddings(use_cpu=True)
 
-    # def test_upper(self):
-    #         self.assertEqual('foo'.upper(), 'FOO')
+        # call function and get results
+        result = self.rag_system.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold=0.8)
+        # sort the result by relevance score in descending order
+        result = sorted(result, key=lambda x: x["relevance_score"], reverse=True)
+
+        # print the results
+        print("Index\tText Sim.\tAbout Sim.\tRelevance Score\tAbout")
+        for doc in result:
+            about = self.rag_system.knowledge_base[doc["index"]]["about"]
+            if len(about) > 50:  # cut off if 'about' is too long
+                about = about[:47] + "..."
+            # print the doc scores
+            print(f"{doc['index']}\t" + "\t\t".join(f"{score:.4f}" for score in [
+            doc["text_similarity"],
+            doc["about_similarity"],
+            doc["relevance_score"]
+            ]) + f"\t\t{about}")
+
+        print("Test for compute_document_scores passed successfully!")
 
 if __name__ == '__main__':
     unittest.main()
