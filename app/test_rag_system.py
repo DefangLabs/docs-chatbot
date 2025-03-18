@@ -31,7 +31,7 @@ class TestRAGSystem(unittest.TestCase):
         self.assertLessEqual(len(top_docs), 2)
         for doc in top_docs:
             self.assertIn("index", doc)
-            self.assertIn(doc["index"], [0, 2])
+            self.assertIn(doc["index"], [0, 2]) # should have indices where relevance scores >= similarity threshold
             self.assertIn("relevance_score", doc)
         print("Test for get_top_docs passed successfully!")
 
