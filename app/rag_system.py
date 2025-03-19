@@ -93,6 +93,7 @@ class RAGSystem:
 
     def get_top_docs(self, doc_scores, similarity_threshold, max_docs):
         sorted_docs = sorted(doc_scores, key=lambda x: x["relevance_score"], reverse=True)
+        # Filter and keep up to max_docs with relevance scores above the similarity threshold
         top_docs = [score for score in sorted_docs[:max_docs] if score["relevance_score"] >= similarity_threshold]
         return top_docs
 
