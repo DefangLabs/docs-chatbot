@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="debug" content="{{ debug }}">
     <title>Ask Defang</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
     <style>
@@ -239,7 +240,6 @@
             const responseContainer = document.createElement('p');
             responseContainer.innerHTML = `<strong>Assistant:</strong> <span class="assistant-response"></span>`;
             chatBox.appendChild(responseContainer);
-            const assistantResponse = responseContainer.querySelector('.assistant-response');
             
             chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -248,44 +248,84 @@
             loadingSpinner.style.display = 'inline-block';
             sendButton.disabled = true;
 
+            const debug = document.querySelector('meta[name=debug]').content;
+            if (debug == '1') {
+                askDebug(query)
+            } else {
+                ask(query, responseContainer)
+            }
+        }
+        
+        function ask(query, responseContainer) {
+            const assistantResponse = responseContainer.querySelector('.assistant-response');
             // Send query to server
             rateLimitingFetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'  
+                    },
+                    body: JSON.stringify({ query: query }),
+                })
+                .then(response => {
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let responseText = '';
+
+                    function readStream() {
+                        reader.read().then(({ done, value }) => {
+                            if (done) {
+                                loadingSpinner.style.display = 'none';
+                                sendButton.disabled = false;
+                                return;
+                            }
+
+                            const chunk = decoder.decode(value);
+                            responseText += chunk;
+                            assistantResponse.innerHTML = marked.parse(responseText);
+                            chatBox.scrollTop = chatBox.scrollHeight;
+
+                            readStream();
+                        });
+                    }
+
+                    readStream();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingSpinner.style.display = 'none';
+                    sendButton.disabled = false;
+                    assistantResponse.textContent = 'Error: Failed to get response';
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                });
+        }
+
+        function askDebug(query) {
+            // fetch context for debugging
+            rateLimitingFetch('/ask/debug', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token() }}'  
+                    'X-CSRFToken': '{{ csrf_token() }}'
                 },
-                body: JSON.stringify({ query: query }),
+                body: JSON.stringify({ query: query}),
             })
-            .then(response => {
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let responseText = '';
-
-                function readStream() {
-                    reader.read().then(({ done, value }) => {
-                        if (done) {
-                            loadingSpinner.style.display = 'none';
-                            sendButton.disabled = false;
-                            return;
-                        }
-
-                        const chunk = decoder.decode(value);
-                        responseText += chunk;
-                        assistantResponse.innerHTML = marked.parse(responseText);
-                        chatBox.scrollTop = chatBox.scrollHeight;
-
-                        readStream();
-                    });
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    chatBox.innerHTML += `<p><strong>Debug Context:</strong> Error: ${data.error}</p>`;
+                } else {
+                    chatBox.innerHTML += `<p><strong>Debug Context:</strong> ${data.context}</p>`;
                 }
-
-                readStream();
+                chatBox.scrollTop = chatBox.scrollHeight;
+                loadingSpinner.style.display = 'none';
+                sendButton.disabled = false;
             })
             .catch(error => {
                 console.error('Error:', error);
                 loadingSpinner.style.display = 'none';
                 sendButton.disabled = false;
-                assistantResponse.textContent = 'Error: Failed to get response';
+                chatBox.innerHTML += '<p><strong>Debug Context:</strong> Error: Failed to get context</p>';
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
         }
