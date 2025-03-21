@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 import json
 import os
 from datetime import date
@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI()
 
 class RAGSystem:
     def __init__(self, knowledge_base_path='knowledge_base.json'):
@@ -132,7 +132,7 @@ class RAGSystem:
 
             messages.append(system_message)
 
-            stream = openai.ChatCompletion.create(
+            stream = client.chat.completions.create(
                 model="gpt-4-turbo",
                 messages=messages,
                 temperature=0.5,
@@ -145,9 +145,9 @@ class RAGSystem:
 
             collected_messages = []
             for chunk in stream:
-                if chunk['choices'][0]['finish_reason'] is not None:
+                if chunk.choices[0].finish_reason is not None:
                     break
-                content = chunk['choices'][0]['delta'].get('content', '')
+                content = chunk.choices[0].delta.content or ''
                 collected_messages.append(content)
                 yield content
 
