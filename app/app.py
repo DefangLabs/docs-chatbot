@@ -40,7 +40,7 @@ def ask():
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
-    
+
     # For analytics tracking, generates an anonymous id and uses it for the session
     if 'anonymous_id' not in session:
         session['anonymous_id'] = str(uuid.uuid4())
@@ -59,12 +59,13 @@ def ask():
         if not full_response:
             full_response = "No response generated"
 
-        # Track the query and response 
-        analytics.track(
-            anonymous_id=anonymous_id, 
-            event='Chatbot Question submitted', 
-            properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
-        )
+        if analytics.write_key:
+            # Track the query and response
+            analytics.track(
+                anonymous_id=anonymous_id,
+                event='Chatbot Question submitted',
+                properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
+            )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
 
