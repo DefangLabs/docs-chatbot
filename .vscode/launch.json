@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Flask",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "flask",
+            "cwd": "${workspaceFolder}/app",
+            "env": {
+                "FLASK_APP": "app.py",
+                "FLASK_DEBUG": "1",
+                "SECRET_KEY": "supersecret",
+                "SESSION_COOKIE_SECURE": "0",
+                "OPENAI_BASE_URL": "http://localhost:8080/api/v1",
+                "OPENAI_API_KEY": "secret"
+            },
+            "args": [
+                "run",
+                "--no-reload",
+                "--host=0.0.0.0",
+                "--port=5050"
+            ],
+            "justMyCode": false,
+            "jinja": true,
+            "autoStartBrowser": false
+        }
+    ]
+}

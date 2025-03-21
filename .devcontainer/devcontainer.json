@@ -6,5 +6,12 @@
   "features": {
     "ghcr.io/defanglabs/devcontainer-feature/defang-cli:1.0.4": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-  }
+  },
+  "mounts": [
+    "source=/Users/jordan/.aws,target=/home/vscode/.aws,type=bind,consistency=cached",
+  ],
+  "forwardPorts": [
+    5050,
+    8080
+  ]
 }

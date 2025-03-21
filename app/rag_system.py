@@ -1,11 +1,15 @@
 import openai
 import json
 import os
+import sys
 from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
+print("check", file=sys.stderr)
+
+openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class RAGSystem:
@@ -78,8 +82,10 @@ class RAGSystem:
 
             messages.append(system_message)
 
+            print("request", messages, file=sys.stderr)
+
             stream = openai.ChatCompletion.create(
-                model="gpt-4-turbo",
+                model="anthropic.claude-3-sonnet-20240229-v1:0",
                 messages=messages,
                 temperature=0.5,
                 max_tokens=2048,
@@ -88,6 +94,8 @@ class RAGSystem:
                 presence_penalty=0,
                 stream=True
             )
+
+            print("response", stream, file=sys.stderr)
 
             collected_messages = []
             for chunk in stream:
@@ -101,7 +109,7 @@ class RAGSystem:
             self.conversation_history.append({"role": "assistant", "content": full_response})
 
         except Exception as e:
-            print(f"Error in answer_query_stream: {e}")
+            print(f"Error in answer_query_stream: {e}", file=sys.stderr)
             yield "An error occurred while generating the response."
 
     def clear_conversation_history(self):
