@@ -1,6 +1,7 @@
 import openai
 import json
 import os
+import sys
 from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -101,7 +102,7 @@ class RAGSystem:
             self.conversation_history.append({"role": "assistant", "content": full_response})
 
         except Exception as e:
-            print(f"Error in answer_query_stream: {e}")
+            print(f"Error in answer_query_stream: {e}", file=sys.stderr)
             yield "An error occurred while generating the response."
 
     def clear_conversation_history(self):
