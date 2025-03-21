@@ -135,7 +135,7 @@ class RAGSystem:
             messages.append(system_message)
 
             stream = openai.ChatCompletion.create(
-                model="gpt-4-turbo",
+                model=os.getenv("MODEL"),
                 messages=messages,
                 temperature=0.5,
                 max_tokens=2048,
