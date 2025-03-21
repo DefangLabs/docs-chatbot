@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
+openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class RAGSystem:
