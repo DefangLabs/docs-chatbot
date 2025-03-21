@@ -25,3 +25,15 @@ services:
       resources:
         reservations:
           memory: 4G
+
+  bedrock:
+    extends:
+      file: compose.yaml
+      service: bedrock
+    environment:
+      - AWS_REGION=us-west-2
+      - AWS_PROFILE=defang-lab
+    volumes:
+      - type: bind
+        source: ~/.aws
+        target: /root/.aws

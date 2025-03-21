@@ -32,3 +32,14 @@ services:
       timeout: 10s
       retries: 5
       #start_period: 40s
+
+  bedrock:
+    image: defangio/bedrock-access-gateway
+    ports:
+      - target: 80
+        published: 8080
+        protocol: tcp
+        mode: ingress
+    environment:
+      - API_KEY=${OPENAI_API_KEY}
+      - API_ROUTE_PREFIX=/api/v1
