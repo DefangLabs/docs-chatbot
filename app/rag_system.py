@@ -27,14 +27,16 @@ class RAGSystem:
     def normalize_query(self, query):
         return query.lower().strip()
     
-    def get_query_embedding(self, query, use_cpu=False):
+    def get_query_embedding(self, query, use_cpu=True):
         normalized_query = self.normalize_query(query)
         query_embedding = self.model.encode([normalized_query], convert_to_tensor=True)
+        # Move the embeddings to the CPU to ensure compatibility with operations like cosine_similarity
         if use_cpu:
             query_embedding = query_embedding.cpu()
         return query_embedding
     
-    def get_doc_embeddings(self, use_cpu=False):
+    def get_doc_embeddings(self, use_cpu=True):
+       # Move the embeddings to the CPU to ensure compatibility with operations like cosine_similarity
         if use_cpu:
             return self.doc_embeddings.cpu()
         return self.doc_embeddings
@@ -62,12 +64,9 @@ class RAGSystem:
 
         return result
 
-    def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5, use_cpu=False):
-        # Note: Set use_cpu=True to run on CPU, which is useful for testing or environments without a GPU.
-        # Set use_cpu=False to leverage GPU for better performance in production.
-        
-        query_embedding = self.get_query_embedding(query, use_cpu)
-        doc_embeddings = self.get_doc_embeddings(use_cpu)
+    def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5):
+        query_embedding = self.get_query_embedding(query)
+        doc_embeddings = self.get_doc_embeddings()
 
         doc_scores = self.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold)
         retrieved_docs = self.get_top_docs(doc_scores, similarity_threshold, max_docs)
