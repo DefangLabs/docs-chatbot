@@ -26,38 +26,92 @@ class RAGSystem:
 
     def normalize_query(self, query):
         return query.lower().strip()
-
-    def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5):
+    
+    def get_query_embedding(self, query, use_cpu=False):
         normalized_query = self.normalize_query(query)
         query_embedding = self.model.encode([normalized_query], convert_to_tensor=True)
-        similarities = cosine_similarity(query_embedding, self.doc_embeddings)[0]
-        relevance_scores = []
+        if use_cpu:
+            query_embedding = query_embedding.cpu()
+        return query_embedding
+    
+    def get_doc_embeddings(self, use_cpu=False):
+        if use_cpu:
+            return self.doc_embeddings.cpu()
+        return self.doc_embeddings
 
-        for i, doc in enumerate(self.knowledge_base):
+    def compute_document_scores(self, query_embedding, doc_embeddings, high_match_threshold):
+        text_similarities = cosine_similarity(query_embedding, doc_embeddings)[0]
+        about_similarities = []
+        for doc in self.knowledge_base:
             about_similarity = cosine_similarity(query_embedding, self.model.encode([doc["about"]]))[0][0]
-            text_similarity = similarities[i]
-            
-            combined_score = (0.3 * about_similarity) + (0.7 * text_similarity)
+            about_similarities.append(about_similarity)
+
+        relevance_scores = self.compute_relevance_scores(text_similarities, about_similarities, high_match_threshold)
+        
+        result = [
+            {
+                "index": i,
+                "about": doc["about"],
+                "text": doc["text"],
+                "text_similarity": text_similarities[i],
+                "about_similarity": about_similarities[i],
+                "relevance_score": relevance_scores[i]
+            }
+            for i, doc in enumerate(self.knowledge_base)
+        ]
+
+        return result
+
+    def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5, use_cpu=False):
+        # Note: Set use_cpu=True to run on CPU, which is useful for testing or environments without a GPU.
+        # Set use_cpu=False to leverage GPU for better performance in production.
+        
+        query_embedding = self.get_query_embedding(query, use_cpu)
+        doc_embeddings = self.get_doc_embeddings(use_cpu)
+
+        doc_scores = self.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold)
+        retrieved_docs = self.get_top_docs(doc_scores, similarity_threshold, max_docs)
+        
+        if not retrieved_docs:
+            retrieved_docs = self.get_fallback_doc()
+        return retrieved_docs
+    
+
+    def compute_relevance_scores(self, text_similarities, about_similarities, high_match_threshold):
+        relevance_scores = []
+        for i, _ in enumerate(self.knowledge_base):
+            about_similarity = about_similarities[i]
+            text_similarity = text_similarities[i]
+            # If either about or text similarity is above the high match threshold, prioritize it
             if about_similarity >= high_match_threshold or text_similarity >= high_match_threshold:
                 combined_score = max(about_similarity, text_similarity)
-                
-            relevance_scores.append((i, combined_score))
+            else:
+                combined_score = (0.3 * about_similarity) + (0.7 * text_similarity)
+            relevance_scores.append(combined_score)
 
-        sorted_indices = sorted(relevance_scores, key=lambda x: x[1], reverse=True)
-        top_indices = [i for i, score in sorted_indices[:max_docs] if score >= similarity_threshold]
+        return relevance_scores
 
-        retrieved_docs = [f'{self.knowledge_base[i]["about"]}. {self.knowledge_base[i]["text"]}' for i in top_indices]
+    def get_top_docs(self, doc_scores, similarity_threshold, max_docs):
+        sorted_docs = sorted(doc_scores, key=lambda x: x["relevance_score"], reverse=True)
+        # Filter and keep up to max_docs with relevance scores above the similarity threshold
+        top_docs = [score for score in sorted_docs[:max_docs] if score["relevance_score"] >= similarity_threshold]
+        return top_docs
 
-        if not retrieved_docs:
-            max_index = np.argmax(similarities)
-            retrieved_docs.append(f'{self.knowledge_base[max_index]["about"]}. {self.knowledge_base[max_index]["text"]}')
-
-        return "\n\n".join(retrieved_docs)
-
+    def get_fallback_doc(self):
+        return [
+            {
+            "about": "No Relevant Information Found",
+            "text": (
+                "I'm sorry, I couldn't find any relevant information for your query. "
+                "Please try rephrasing your question or ask about a different topic. "
+                "For further assistance, you can visit our official website or reach out to our support team."
+            )
+            }
+        ]
+    
     def answer_query_stream(self, query):
         try:
-            normalized_query = self.normalize_query(query)
-            context = self.retrieve(normalized_query)
+            context = self.get_context(query)
             
             self.conversation_history.append({"role": "user", "content": query})
 
@@ -116,6 +170,14 @@ class RAGSystem:
         self.knowledge_base = self.load_knowledge_base()  # Reload the knowledge base
         self.doc_embeddings = self.embed_knowledge_base()  # Rebuild the embeddings
         print("Embeddings have been rebuilt.")
+
+    def get_context(self, query):
+        normalized_query = self.normalize_query(query)
+        retrieved_docs = self.retrieve(normalized_query)
+        retrieved_text = []
+        for doc in retrieved_docs:
+            retrieved_text.append(f'{doc["about"]}. {doc["text"]}')
+        return "\n\n".join(retrieved_text)
 
 # Instantiate the RAGSystem
 rag_system = RAGSystem()
