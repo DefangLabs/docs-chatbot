@@ -4,8 +4,8 @@ services:
       context: ./app
       shm_size: "16gb"
     ports:
-      - target: 5000
-        published: 5001 # MacOS AirPlay uses port 5000
+      - target: 5050
+        published: 5050 # MacOS AirPlay uses port 5000
         protocol: tcp
         mode: ingress
     environment:
@@ -14,7 +14,12 @@ services:
       SEGMENT_WRITE_KEY: ${SEGMENT_WRITE_KEY} # Set your Segment write key here or in the .env file
       SESSION_COOKIE_SECURE: 0
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
-    command: flask run --host=0.0.0.0
+      SENTENCE_TRANSFORMERS_HOME: /app/sentence-transformers
+    volumes:
+      - type: bind
+        source: ./app
+        target: /app
+    command: flask run --host=0.0.0.0 --port=5050
     deploy:
       resources:
         reservations:

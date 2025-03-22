@@ -9,7 +9,7 @@ import uuid
 
 analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
 
-app = Flask(__name__, static_folder='templates/images')
+app = Flask(__name__, static_folder='templates/static')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
@@ -40,7 +40,7 @@ def ask():
 
     if not query:
         return jsonify({"error": "No query provided"}), 400
-    
+
     # For analytics tracking, generates an anonymous id and uses it for the session
     if 'anonymous_id' not in session:
         session['anonymous_id'] = str(uuid.uuid4())
@@ -59,12 +59,13 @@ def ask():
         if not full_response:
             full_response = "No response generated"
 
-        # Track the query and response 
-        analytics.track(
-            anonymous_id=anonymous_id, 
-            event='Chatbot Question submitted', 
-            properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
-        )
+        if analytics.write_key:
+            # Track the query and response
+            analytics.track(
+                anonymous_id=anonymous_id,
+                event='Chatbot Question submitted',
+                properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
+            )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
 
@@ -107,5 +108,4 @@ if os.getenv('DEBUG') == '1':
         context = rag_system.get_context(query)
         return jsonify({"context": context})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, static_url_path='/static')
+    app.run(host='0.0.0.0', port=5050)

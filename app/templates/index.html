@@ -6,28 +6,46 @@
     <meta name="debug" content="{{ debug }}">
     <title>Ask Defang</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap');
     </style>
     <style>
+        @font-face {
+            font-family: 'Guaruja Neue';
+            src: url("{{ url_for('static', filename='fonts/guaruja-neue/GuarujaNeue-Regular.woff') }}") format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Guaruja Neue';
+            src: url("{{ url_for('static', filename='fonts/guaruja-neue/GuarujaNeue-SemiBold.woff') }}") format('woff');
+            font-weight: bold;
+            font-style: normal;
+        }
+
         body {
-            font-family: 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Guaruja Neue', 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(311deg, rgba(63, 178, 175, .67), rgba(80, 54, 163, .67) 53%, rgba(9, 23, 76, .85)),
-                linear-gradient(54deg, hsla(4, 100%, 74%, .25), hsla(4, 100%, 74%, 0) 28%),
-                linear-gradient(241deg, rgba(228, 122, 255, .32), #d4f0f8 36%);
+            background: linear-gradient(311deg, rgba(9, 61, 157, 1.00), rgba(1, 30, 80, 1.00));
             color: #fff;
             padding: 20px;
             box-sizing: border-box;
         }
 
         input, button {
-            font-family: 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Guaruja Neue', 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        a:link, a:visited, a:hover, a:active {
+            color: white;
+            text-decoration: none;
         }
 
         .chat-container {
@@ -42,6 +60,7 @@
 
         .img-container {
             height: 2em;
+            margin-top: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -49,7 +68,7 @@
         }
     
         .icon {
-          height: 2.5em;
+          height: 2.75em;
         }
 
         h2 {
@@ -57,8 +76,9 @@
             color: #fff;
             margin-top: 10px;
             margin-bottom: 20px;
-            font-weight: 300;
-            font-size: 1.5rem;
+            font-family: 'Guaruja Neue';
+            font-weight: bold;
+            font-size: 1.75rem;
         }
 
         .chat-box {
@@ -173,7 +193,7 @@
     <div class="chat-container">
         <div class="img-container">
             <a href="https://defang.io/" target="_parent">
-            <img class="icon" src="{{ url_for('static', filename='defang_icon.svg') }}" alt="defang_icon"/>
+            <img class="icon" src="{{ url_for('static', filename='images/defang_icon.svg') }}" alt="defang_icon"/>
             </a>
         </div>
         <h2>Ask Defang</h2>
@@ -185,7 +205,7 @@
         </button>
         <div class="issue-container">
             <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
-            <img class="icon" style="height: 1.5em" src="{{ url_for('static', filename='github_icon.svg') }}" alt="github_icon"/>
+            <img class="icon" style="height: 1.5em" src="{{ url_for('static', filename='images/github_icon.svg') }}" alt="github_icon"/>
             </a>
             <p>
               <a href="https://github.com/DefangLabs/docs-chatbot/issues" target="_blank">
