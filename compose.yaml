@@ -7,8 +7,8 @@ services:
       context: ./app
       shm_size: "16gb"
     ports:
-      - target: 5000
-        published: 5000
+      - target: 5050
+        published: 5050
         protocol: tcp
         mode: ingress
     environment:
@@ -17,13 +17,13 @@ services:
       SEGMENT_WRITE_KEY: 
       SESSION_COOKIE_SECURE: 1
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
-    command: uwsgi --http 0.0.0.0:5000 --wsgi-file app.py --callable app --processes 4 --threads 2
+    command: uwsgi --http 0.0.0.0:5050 --wsgi-file app.py --callable app --processes 4 --threads 2
     deploy:
       resources:
         reservations:
           memory: 4G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
       interval: 30s
       timeout: 10s
       retries: 5

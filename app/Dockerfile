@@ -39,11 +39,11 @@ COPY . /app
 # Make the prebuild.sh script executable
 RUN chmod +x .tmp/prebuild.sh
 
-# Expose port 5000 for the Flask application
-EXPOSE 5000
+# Expose port 5050 for the Flask application
+EXPOSE 5050
 
 # Define environment variable for Flask
 ENV FLASK_APP=app.py
 
 # Run the application using uWSGI
-CMD ["uwsgi", "--http", "0.0.0.0:5000", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]
+CMD ["uwsgi", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]

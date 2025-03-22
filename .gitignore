@@ -1,3 +1,5 @@
+__pycache__
+sentence-transformers
 myenv/
 .tmp/*
 !.tmp/prebuild.sh
