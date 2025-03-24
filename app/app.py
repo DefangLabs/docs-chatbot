@@ -108,4 +108,5 @@ if os.getenv('DEBUG') == '1':
         context = rag_system.get_context(query)
         return jsonify({"context": context})
 
+if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)
