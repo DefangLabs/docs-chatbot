@@ -15,7 +15,9 @@ services:
       SEGMENT_WRITE_KEY: ${SEGMENT_WRITE_KEY} # Set your Segment write key here or in the .env file
       SESSION_COOKIE_SECURE: 0
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
+      OPENAI_BASE_URL: "http://bedrock:5051/api/v1"
       SENTENCE_TRANSFORMERS_HOME: /app/sentence-transformers
+      MODEL: "anthropic.claude-3-sonnet-20240229-v1:0"
     volumes:
       - type: bind
         source: ./app
@@ -30,9 +32,15 @@ services:
     extends:
       file: compose.yaml
       service: bedrock
+    ports:
+      - target: 5051
+        published: 5051
+        protocol: tcp
+        mode: ingress
     environment:
       - AWS_REGION=us-west-2
       - AWS_PROFILE=defang-lab
+      - API_ROUTE_PREFIX=/api/v1
     volumes:
       - type: bind
         source: ~/.aws
