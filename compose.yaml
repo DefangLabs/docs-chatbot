@@ -35,6 +35,7 @@ services:
 
   bedrock:
     image: defangio/bedrock-access-gateway
+    x-defang-llm: true
     ports:
       - target: 5051
         published: 5051
