@@ -13,6 +13,7 @@ services:
         mode: ingress
     environment:
       FLASK_APP: app.py
+      DEBUG: 0
       SECRET_KEY:
       SEGMENT_WRITE_KEY:
       SESSION_COOKIE_SECURE: 1
