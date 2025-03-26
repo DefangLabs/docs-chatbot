@@ -3,13 +3,14 @@ services:
     extends:
       file: compose.yaml
       service: app
+    env_file:
+      - .env
     environment:
       ASK_TOKEN: asktoken
       FLASK_APP: app.py
       SECRET_KEY: supersecret
       SEGMENT_WRITE_KEY: ${SEGMENT_WRITE_KEY} # Set your Segment write key here or in the .env file
       SESSION_COOKIE_SECURE: 0
-      OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
       OPENAI_BASE_URL: "http://llm:5051/api/v1"
       SENTENCE_TRANSFORMERS_HOME: /app/sentence-transformers
     volumes:
@@ -22,6 +23,8 @@ services:
     extends:
       file: compose.yaml
       service: llm
+    env_file:
+      - .env
     ports:
       - target: 5051
         published: 5051

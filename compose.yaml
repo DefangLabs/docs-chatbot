@@ -18,7 +18,7 @@ services:
       SECRET_KEY:
       SEGMENT_WRITE_KEY:
       SESSION_COOKIE_SECURE: 1
-      OPENAI_API_KEY: # Set your OpenAI API key here or in the .env file
+      OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
       OPENAI_BASE_URL: "http://llm/api/v1"
       MODEL: "anthropic.claude-3-sonnet-20240229-v1:0"
     command: uwsgi --http 0.0.0.0:5050 --wsgi-file app.py --callable app --processes 4 --threads 2
