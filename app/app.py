@@ -28,7 +28,7 @@ def validate_pow(nonce, data, difficulty):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html')
+    return render_template('index.html', debug=os.getenv('DEBUG'))
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -97,6 +97,16 @@ def trigger_rebuild():
     except Exception as e:
         print(f"Error in /trigger-rebuild endpoint: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
+
+if os.getenv('DEBUG') == '1':
+    @app.route('/ask/debug', methods=['POST'])
+    def debug_context():
+        data = request.get_json()
+        query = data.get('query', '')
+        if not query:
+            return jsonify({"error": "Query is required"}), 400
+        context = rag_system.get_context(query)
+        return jsonify({"context": context})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)
