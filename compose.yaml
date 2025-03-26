@@ -42,6 +42,6 @@ services:
         protocol: tcp
         mode: host
     environment:
-      - API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - API_ROUTE_PREFIX=/api/v1
       - PORT=5051
