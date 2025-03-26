@@ -28,10 +28,8 @@ services:
         protocol: tcp
         mode: ingress
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - AWS_REGION=us-west-2
       - AWS_PROFILE=defang-lab
-      - API_ROUTE_PREFIX=/api/v1
       - PORT=5051
     volumes:
       - type: bind
