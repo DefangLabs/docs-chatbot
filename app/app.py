@@ -6,6 +6,7 @@ import subprocess
 import os
 import segment.analytics as analytics
 import uuid
+import sys
 
 analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
 
@@ -53,7 +54,7 @@ def ask():
                 yield token
                 full_response += token
         except Exception as e:
-            print(f"Error in /ask endpoint: {e}")
+            print(f"Error in /ask endpoint: {e}", file=sys.stderr)
             yield "Internal Server Error"
 
         if not full_response:
