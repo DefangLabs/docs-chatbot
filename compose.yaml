@@ -19,7 +19,7 @@ services:
       SEGMENT_WRITE_KEY:
       SESSION_COOKIE_SECURE: 1
       OPENAI_API_KEY: # Set your OpenAI API key here or in the .env file
-      OPENAI_BASE_URL: "http://bedrock/api/v1"
+      OPENAI_BASE_URL: "http://llm/api/v1"
       MODEL: "anthropic.claude-3-sonnet-20240229-v1:0"
     command: uwsgi --http 0.0.0.0:5050 --wsgi-file app.py --callable app --processes 4 --threads 2
     deploy:
@@ -33,7 +33,7 @@ services:
       retries: 5
       #start_period: 40s
 
-  bedrock:
+  llm:
     image: defangio/bedrock-access-gateway
     x-defang-llm: true
     ports:
