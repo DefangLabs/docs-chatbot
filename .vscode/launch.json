@@ -16,7 +16,8 @@
                 "SECRET_KEY": "supersecret",
                 "SESSION_COOKIE_SECURE": "0",
                 "OPENAI_BASE_URL": "http://localhost:8080/api/v1",
-                "OPENAI_API_KEY": "secret"
+                "OPENAI_API_KEY": "secret",
+                "MODEL": "anthropic.claude-3-sonnet-20240229-v1:0"
             },
             "args": [
                 "run",
