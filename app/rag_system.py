@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
+openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class RAGSystem:
@@ -134,7 +135,7 @@ class RAGSystem:
             messages.append(system_message)
 
             stream = openai.ChatCompletion.create(
-                model="gpt-4-turbo",
+                model=os.getenv("MODEL"),
                 messages=messages,
                 temperature=0.5,
                 max_tokens=2048,
