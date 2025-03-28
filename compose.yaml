@@ -34,7 +34,7 @@ services:
       #start_period: 40s
 
   llm:
-    image: defangio/bedrock-access-gateway
+    image: defangio/openai-access-gateway
     x-defang-llm: true
     ports:
       - target: 80
