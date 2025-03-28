@@ -43,6 +43,5 @@ services:
         mode: host
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - API_ROUTE_PREFIX=/api/v1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
