@@ -31,10 +31,26 @@ def validate_pow(nonce, data, difficulty):
 def index():
     return render_template('index.html', debug=os.getenv('DEBUG'))
 
+@app.before_request
+def exempt_csrf_for_ask_token():
+    if request.endpoint == 'ask':
+        ask_token = request.headers.get('Ask-Token')
+        # If ask token matches the expected value, bypass CSRF protection
+        if ask_token and ask_token == os.getenv('ASK_TOKEN'):
+            print(f"CSRF protection exempted for endpoint '{request.endpoint}' due to valid Ask-Token")
+            csrf.exempt(app.view_functions['ask'])
+        else:
+            print(f"CSRF protection enabled for endpoint: {request.endpoint}")
+
 @app.route('/ask', methods=['POST'])
 def ask():
-    if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
-        return jsonify({"error": "Invalid proof of work"}), 400
+    ask_token = request.headers.get('Ask-Token')
+    # If ask token matches the expected value, bypass PoW validation
+    if ask_token != os.getenv('ASK_TOKEN'):
+        if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
+            return jsonify({"error": "Invalid Proof of Work"}), 400
+    else:
+        print(f"Proof of Work validation skipped for endpoint: {request.endpoint} due to valid Ask-Token")
 
     data = request.get_json()
     query = data.get('query')
