@@ -12,6 +12,7 @@ services:
         protocol: tcp
         mode: ingress
     environment:
+      ASK_TOKEN:
       FLASK_APP: app.py
       DEBUG: 0
       SECRET_KEY:

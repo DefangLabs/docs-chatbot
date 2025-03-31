@@ -9,6 +9,7 @@ services:
         protocol: tcp
         mode: ingress
     environment:
+      ASK_TOKEN: asktoken
       FLASK_APP: app.py
       SECRET_KEY: supersecret
       SEGMENT_WRITE_KEY: ${SEGMENT_WRITE_KEY} # Set your Segment write key here or in the .env file

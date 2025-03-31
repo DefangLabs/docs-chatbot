@@ -26,16 +26,7 @@ def validate_pow(nonce, data, difficulty):
     first_uint32 = int.from_bytes(calculated_hash[:4], byteorder='big')
     return first_uint32 <= difficulty
 
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    return render_template('index.html', debug=os.getenv('DEBUG'))
-
-@app.route('/ask', methods=['POST'])
-def ask():
-    if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
-        return jsonify({"error": "Invalid proof of work"}), 400
-
+def handle_ask_request(request, session):
     data = request.get_json()
     query = data.get('query')
 
@@ -69,6 +60,30 @@ def ask():
             )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('index.html', debug=os.getenv('DEBUG'))
+
+@app.route('/ask', methods=['POST'])
+def ask():
+    if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
+        return jsonify({"error": "Invalid Proof of Work"}), 400
+
+    response = handle_ask_request(request, session)
+    return response
+
+# /v1/ask allows bypassing of CSRF and PoW for clients with a valid Ask Token
+@app.route('/v1/ask', methods=['POST'])
+@csrf.exempt
+def v1_ask():
+    auth_header = request.headers.get('Authorization')
+    ask_token = auth_header.split("Bearer ")[1] if auth_header and auth_header.startswith("Bearer ") else None
+    if ask_token and ask_token == os.getenv('ASK_TOKEN'):
+        response = handle_ask_request(request, session)
+        return response
+    else:
+        jsonify({"error": "Invalid or missing Ask Token"}), 401
 
 @app.route('/trigger-rebuild', methods=['POST'])
 @csrf.exempt
