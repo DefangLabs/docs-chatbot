@@ -26,32 +26,7 @@ def validate_pow(nonce, data, difficulty):
     first_uint32 = int.from_bytes(calculated_hash[:4], byteorder='big')
     return first_uint32 <= difficulty
 
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    return render_template('index.html', debug=os.getenv('DEBUG'))
-
-@app.before_request
-def exempt_csrf_for_ask_token():
-    if request.endpoint == 'ask':
-        ask_token = request.headers.get('Ask-Token')
-        # If ask token matches the expected value, bypass CSRF protection
-        if ask_token and ask_token == os.getenv('ASK_TOKEN'):
-            print(f"CSRF protection exempted for endpoint '{request.endpoint}' due to valid Ask-Token")
-            csrf.exempt(app.view_functions['ask'])
-        else:
-            print(f"CSRF protection enabled for endpoint: {request.endpoint}")
-
-@app.route('/ask', methods=['POST'])
-def ask():
-    ask_token = request.headers.get('Ask-Token')
-    # If ask token matches the expected value, bypass PoW validation
-    if ask_token != os.getenv('ASK_TOKEN'):
-        if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
-            return jsonify({"error": "Invalid Proof of Work"}), 400
-    else:
-        print(f"Proof of Work validation skipped for endpoint: {request.endpoint} due to valid Ask-Token")
-
+def handle_ask_request(request, session):
     data = request.get_json()
     query = data.get('query')
 
@@ -85,6 +60,30 @@ def ask():
             )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    return render_template('index.html', debug=os.getenv('DEBUG'))
+
+@app.route('/ask', methods=['POST'])
+def ask():
+    if not validate_pow(request.headers.get('X-Nonce'), request.get_data(), 0x50000):
+        return jsonify({"error": "Invalid Proof of Work"}), 400
+
+    response = handle_ask_request(request, session)
+    return response
+
+# /v1/ask allows bypassing of CSRF and PoW for clients with a valid Ask Token
+@app.route('/v1/ask', methods=['POST'])
+@csrf.exempt
+def v1_ask():
+    auth_header = request.headers.get('Authorization')
+    ask_token = auth_header.split("Bearer ")[1] if auth_header and auth_header.startswith("Bearer ") else None
+    if ask_token and ask_token == os.getenv('ASK_TOKEN'):
+        response = handle_ask_request(request, session)
+        return response
+    else:
+        jsonify({"error": "Invalid or missing Ask Token"}), 401
 
 @app.route('/trigger-rebuild', methods=['POST'])
 @csrf.exempt
