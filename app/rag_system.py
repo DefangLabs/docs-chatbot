@@ -6,6 +6,7 @@ from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import traceback
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -155,6 +156,7 @@ class RAGSystem:
 
         except Exception as e:
             print(f"Error in answer_query_stream: {e}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
             yield "An error occurred while generating the response."
 
     def clear_conversation_history(self):

@@ -7,6 +7,7 @@ import os
 import segment.analytics as analytics
 import uuid
 import sys
+import traceback
 
 analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
 
@@ -46,6 +47,7 @@ def handle_ask_request(request, session):
                 full_response += token
         except Exception as e:
             print(f"Error in /ask endpoint: {e}", file=sys.stderr)
+            traceback.print_exc()
             yield "Internal Server Error"
 
         if not full_response:
