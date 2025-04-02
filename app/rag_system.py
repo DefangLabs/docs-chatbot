@@ -66,7 +66,7 @@ class RAGSystem:
 
         return result
 
-    def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5, use_cpu=False):
+    def retrieve(self, query, similarity_threshold=0.4, high_match_threshold=0.8, max_docs=5, use_cpu=False):
         # Note: Set use_cpu=True to run on CPU, which is useful for testing or environments without a GPU.
         # Set use_cpu=False to leverage GPU for better performance in production.
 
