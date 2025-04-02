@@ -143,7 +143,7 @@ def parse_markdown_file_to_json(file_path):
                 "id": current_id,
                 "about": about,
                 "text": text,
-                "path": file_path.replace("./.tmp/defang-docs", "")
+                "path": file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
             })
             current_id += 1
 
@@ -183,7 +183,7 @@ def parse_cli_markdown(file_path):
             "id": current_id,
             "about": about,
             "text": text,
-            "path": file_path.replace("./.tmp/defang-docs", "")
+            "path": file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
         })
         current_id += 1
 
