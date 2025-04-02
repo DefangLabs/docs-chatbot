@@ -193,7 +193,7 @@ def recursive_parse_directory(root_dir):
     """ Recursively parses all markdown files in the directory. """
     for dirpath, dirnames, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename.lower().endswith('.md'):
+            if filename.lower().endswith('.md') or filename.lower().endswith('.mdx'):
                 file_path = os.path.join(dirpath, filename)
                 if 'cli' in dirpath.lower() or 'cli' in filename.lower():
                     parse_cli_markdown(file_path)
