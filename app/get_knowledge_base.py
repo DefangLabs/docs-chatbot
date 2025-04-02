@@ -142,7 +142,8 @@ def parse_markdown_file_to_json(file_path):
             json_output.append({
                 "id": current_id,
                 "about": about,
-                "text": text
+                "text": text,
+                "path": file_path.replace("./.tmp/defang-docs", "")
             })
             current_id += 1
 
@@ -181,7 +182,8 @@ def parse_cli_markdown(file_path):
         json_output.append({
             "id": current_id,
             "about": about,
-            "text": text
+            "text": text,
+            "path": file_path.replace("./.tmp/defang-docs", "")
         })
         current_id += 1
 
