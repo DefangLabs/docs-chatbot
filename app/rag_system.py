@@ -28,14 +28,14 @@ class RAGSystem:
 
     def normalize_query(self, query):
         return query.lower().strip()
-    
+
     def get_query_embedding(self, query, use_cpu=False):
         normalized_query = self.normalize_query(query)
         query_embedding = self.model.encode([normalized_query], convert_to_tensor=True)
         if use_cpu:
             query_embedding = query_embedding.cpu()
         return query_embedding
-    
+
     def get_doc_embeddings(self, use_cpu=False):
         if use_cpu:
             return self.doc_embeddings.cpu()
@@ -49,7 +49,7 @@ class RAGSystem:
             about_similarities.append(about_similarity)
 
         relevance_scores = self.compute_relevance_scores(text_similarities, about_similarities, high_match_threshold)
-        
+
         result = [
             {
                 "index": i,
@@ -67,17 +67,17 @@ class RAGSystem:
     def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5, use_cpu=False):
         # Note: Set use_cpu=True to run on CPU, which is useful for testing or environments without a GPU.
         # Set use_cpu=False to leverage GPU for better performance in production.
-        
+
         query_embedding = self.get_query_embedding(query, use_cpu)
         doc_embeddings = self.get_doc_embeddings(use_cpu)
 
         doc_scores = self.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold)
         retrieved_docs = self.get_top_docs(doc_scores, similarity_threshold, max_docs)
-        
+
         if not retrieved_docs:
             retrieved_docs = self.get_fallback_doc()
         return retrieved_docs
-    
+
 
     def compute_relevance_scores(self, text_similarities, about_similarities, high_match_threshold):
         relevance_scores = []
@@ -110,29 +110,26 @@ class RAGSystem:
             )
             }
         ]
-    
+
     def answer_query_stream(self, query):
         try:
             context = self.get_context(query)
-            
-            self.conversation_history.append({"role": "user", "content": query})
 
-            messages = [{"role": "system", "content": "You are a helpful assistant."}]
-            messages.extend(self.conversation_history)
-
-            system_message = {
+            messages = [{
                 "role": "system",
                 "content": (
-                    "You are a dedicated assistant designed to provide positive answers about Defang. "
-                    "When the user says 'you', 'your', or any pronoun, interpret it as referring to Defang with context of Defang. "
+                    "Your name is Cloude (with an e at the end), you are a helpful AI assistant created by DefangLabs to help users learn about the cloud deployment tool Defang. "
+                    "Your task is to provide positive answers about the cloud deployment tool Defang."
+                    "When the user says 'you', 'your', or any pronoun, interpret it as referring to Ask Defang with context of Defang. "
                     "If the user's question involves comparisons with or references to other services, you may use external knowledge. "
                     "However, if the question is strictly about Defang, you must ignore all external knowledge and only utilize the given context. "
                     "Today's date is " + date.today().strftime('%B %d, %Y') + ". "
                     "Context: " + context
                 )
-            }
+            }]
 
-            messages.append(system_message)
+            self.conversation_history.append({"role": "user", "content": query})
+            messages.extend(self.conversation_history)
 
             stream = openai.ChatCompletion.create(
                 model=os.getenv("MODEL"),
