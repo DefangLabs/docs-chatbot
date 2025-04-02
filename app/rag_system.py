@@ -139,7 +139,7 @@ class RAGSystem:
             stream = openai.ChatCompletion.create(
                 model=os.getenv("MODEL"),
                 messages=messages,
-                temperature=0.5,
+                temperature=0.25,
                 max_tokens=2048,
                 top_p=1,
                 frequency_penalty=0,
