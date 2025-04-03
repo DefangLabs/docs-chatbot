@@ -42,7 +42,7 @@
         input, button {
             font-family: 'Guaruja Neue', 'Exo 2', 'Helvetica Neue', Arial, sans-serif;
         }
-        
+
         a:link, a:visited, a:hover, a:active {
             color: white;
             text-decoration: none;
@@ -66,7 +66,7 @@
             align-items: center;
             width: 100%;
         }
-    
+
         .icon {
           height: 2.75em;
         }
@@ -111,6 +111,11 @@
             font-size: 0.9em;
         }
 
+        .chat-box a, .chat-box a:hover {
+            color: #488df3;
+            text-decoration: underline !important;
+        }
+
         .input-box {
             width: 100%;
             padding: 10px;
@@ -149,11 +154,11 @@
             justify-content: center;
             padding-top: 10px;
         }
-        
+
         .issue-container p {
             margin: 10px;
         }
-        
+
         .issue-container a:visited, a:hover, a:active, a:focus {
             color: white;
             text-decoration: none !important;
@@ -255,12 +260,12 @@
 
             // Display user query
             chatBox.innerHTML += `<p><strong>You:</strong> ${query}</p>`;
-            
+
             // Create a new response container for this query
             const responseContainer = document.createElement('p');
             responseContainer.innerHTML = `<strong>Assistant:</strong> <span class="assistant-response"></span>`;
             chatBox.appendChild(responseContainer);
-            
+
             chatBox.scrollTop = chatBox.scrollHeight;
 
             // Clear input and show loading spinner
@@ -275,7 +280,7 @@
                 ask(query, responseContainer)
             }
         }
-        
+
         function ask(query, responseContainer) {
             const assistantResponse = responseContainer.querySelector('.assistant-response');
             // Send query to server
@@ -283,7 +288,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token() }}'  
+                        'X-CSRFToken': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({ query: query }),
                 })

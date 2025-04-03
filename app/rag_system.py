@@ -6,6 +6,7 @@ from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import traceback
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -55,6 +56,7 @@ class RAGSystem:
                 "index": i,
                 "about": doc["about"],
                 "text": doc["text"],
+                "path": doc["path"],
                 "text_similarity": text_similarities[i],
                 "about_similarity": about_similarities[i],
                 "relevance_score": relevance_scores[i]
@@ -64,7 +66,7 @@ class RAGSystem:
 
         return result
 
-    def retrieve(self, query, similarity_threshold=0.7, high_match_threshold=0.8, max_docs=5, use_cpu=False):
+    def retrieve(self, query, similarity_threshold=0.4, high_match_threshold=0.8, max_docs=5, use_cpu=False):
         # Note: Set use_cpu=True to run on CPU, which is useful for testing or environments without a GPU.
         # Set use_cpu=False to leverage GPU for better performance in production.
 
@@ -112,29 +114,32 @@ class RAGSystem:
         ]
 
     def answer_query_stream(self, query):
+        normalized_query = self.normalize_query(query)
+        retrieved_docs = self.retrieve(normalized_query)
+        context = self.get_context(retrieved_docs)
+        citations = self.get_citations(retrieved_docs)
+
+        messages = [{
+            "role": "system",
+            "content": (
+                "Your name is Cloude (with an e at the end), you are a helpful AI assistant created by DefangLabs to help users learn about the cloud deployment tool Defang. "
+                "Your task is to provide positive answers about the cloud deployment tool Defang."
+                "When the user says 'you', 'your', or any pronoun, interpret it as referring to Ask Defang with context of Defang. "
+                "If the user's question involves comparisons with or references to other services, you may use external knowledge. "
+                "However, if the question is strictly about Defang, you must ignore all external knowledge and only utilize the given context. "
+                "Today's date is " + date.today().strftime('%B %d, %Y') + ". "
+                "Context: " + context
+            )
+        }]
+
+        self.conversation_history.append({"role": "user", "content": query})
+        messages.extend(self.conversation_history)
+
         try:
-            context = self.get_context(query)
-
-            messages = [{
-                "role": "system",
-                "content": (
-                    "Your name is Cloude (with an e at the end), you are a helpful AI assistant created by DefangLabs to help users learn about the cloud deployment tool Defang. "
-                    "Your task is to provide positive answers about the cloud deployment tool Defang."
-                    "When the user says 'you', 'your', or any pronoun, interpret it as referring to Ask Defang with context of Defang. "
-                    "If the user's question involves comparisons with or references to other services, you may use external knowledge. "
-                    "However, if the question is strictly about Defang, you must ignore all external knowledge and only utilize the given context. "
-                    "Today's date is " + date.today().strftime('%B %d, %Y') + ". "
-                    "Context: " + context
-                )
-            }]
-
-            self.conversation_history.append({"role": "user", "content": query})
-            messages.extend(self.conversation_history)
-
             stream = openai.ChatCompletion.create(
                 model=os.getenv("MODEL"),
                 messages=messages,
-                temperature=0.5,
+                temperature=0.25,
                 max_tokens=2048,
                 top_p=1,
                 frequency_penalty=0,
@@ -150,11 +155,15 @@ class RAGSystem:
                 collected_messages.append(content)
                 yield content
 
+            if len(citations) > 0:
+                yield "\n\nReferences:\n" + "\n".join(citations)
+
             full_response = ''.join(collected_messages).strip()
             self.conversation_history.append({"role": "assistant", "content": full_response})
 
         except Exception as e:
             print(f"Error in answer_query_stream: {e}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
             yield "An error occurred while generating the response."
 
     def clear_conversation_history(self):
@@ -170,12 +179,19 @@ class RAGSystem:
         self.doc_embeddings = self.embed_knowledge_base()  # Rebuild the embeddings
         print("Embeddings have been rebuilt.")
 
-    def get_context(self, query):
-        normalized_query = self.normalize_query(query)
-        retrieved_docs = self.retrieve(normalized_query)
+    def get_citations(self, retrieved_docs):
+        citations = []
+        for doc in retrieved_docs:
+            if "path" not in doc:
+                continue
+            citation = f" * [{doc['about']}](https://docs.defang.io{doc['path']})"
+            citations.append(citation)
+        return citations
+
+    def get_context(self, retrieved_docs):
         retrieved_text = []
         for doc in retrieved_docs:
-            retrieved_text.append(f'{doc["about"]}. {doc["text"]}')
+            retrieved_text.append(f"{doc['about']}. {doc['text']}")
         return "\n\n".join(retrieved_text)
 
 # Instantiate the RAGSystem
