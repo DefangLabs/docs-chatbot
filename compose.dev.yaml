@@ -38,3 +38,11 @@ services:
       - type: bind
         source: ~/.aws
         target: /root/.aws
+
+  discord-bot:
+    restart: unless-stopped
+    extends:
+      file: compose.yaml
+      service: discord-bot
+    env_file:
+      - .env
