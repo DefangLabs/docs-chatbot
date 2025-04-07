@@ -43,3 +43,24 @@ services:
         mode: host
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+  discord-bot:
+    restart: unless-stopped
+    build:
+      context: ./discord-bot
+      dockerfile: Dockerfile
+    ports:
+      - mode: ingress
+        target: 3000
+        published: 3000
+    environment:
+      DISCORD_APP_ID:
+      DISCORD_TOKEN:
+      DISCORD_PUBLIC_KEY:
+      ASK_TOKEN:
+    deploy:
+      resources:
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
