@@ -15,6 +15,7 @@ services:
       ASK_TOKEN:
       FLASK_APP: app.py
       DEBUG: 0
+      REBUILD_TOKEN:
       SECRET_KEY:
       SEGMENT_WRITE_KEY:
       SESSION_COOKIE_SECURE: 1

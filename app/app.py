@@ -91,7 +91,7 @@ def v1_ask():
 @csrf.exempt
 def trigger_rebuild():
     token = request.args.get('token')
-    if token != 'b75c82e0-2f47-4fcb-8b02-d66932803885':
+    if token != os.getenv('REBUILD_TOKEN'):
         return jsonify({"error": "Unauthorized"}), 401
     try:
         print("Running get_knowledge_base.py script...")

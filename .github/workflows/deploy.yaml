@@ -34,13 +34,14 @@ jobs:
       - name: Deploy
         uses: DefangLabs/defang-github-action@v1.1.3
         with:
-          config-env-vars: ASK_TOKEN OPENAI_API_KEY SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY
+          config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY
           mode: production
           provider: aws
           
         env:
           ASK_TOKEN: ${{ secrets.ASK_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REBUILD_TOKEN: ${{ secrets.REBUILD_TOKEN }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           SEGMENT_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_KEY }}
           DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
