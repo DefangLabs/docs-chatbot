@@ -16,7 +16,7 @@ import { getRandomEmoji } from './utils.js';
 
 // Global Variables:
 let currentIndex = 0; // Current page index of the bot's response
-let chunks; // Message chunks (used when the response exceeds the character limit)
+let chunks = []; // Message chunks (used when the response exceeds the character limit)
 let dotInterval = null;
 
 // Create an express app
