@@ -14,6 +14,11 @@ import {
 } from 'discord-interactions';
 import { getRandomEmoji } from './utils.js';
 
+// Global Variables:
+let currentIndex = 0; // Current page index of the bot's response
+let chunks; // Message chunks (used when the response exceeds the character limit)
+let dotInterval = null;
+
 // Create an express app
 const app = express();
 // Get port, or default to 3000
@@ -25,6 +30,57 @@ app.get('/', (req, res) => {
 });
 
 // Helper functions below
+function startLoadingDots(endpoint, initialMessage) {
+  let dotCount = 0;
+  let maxDots = 4
+
+  dotInterval = setInterval(() => {
+    dotCount = (dotCount % maxDots) + 1;
+    const loadingMessage = `${initialMessage}${'.'.repeat(dotCount)}`;
+    const options = {
+      content: loadingMessage,
+      flags: InteractionResponseFlags.EPHEMERAL,
+      components: [],
+    };
+
+    sendResponse(endpoint, options);
+  }, 500); // Interval delay
+}
+
+function stopLoadingDots() {
+  if (dotInterval) {
+    clearInterval(dotInterval);
+  }
+}
+
+function createMessageWithButtons(index, chunks) {
+  currentIndex = index; // Set the global currentIndex to the current index
+  return {
+    content: chunks[index],
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            label: 'Previous',
+            style: 1,
+            custom_id: `prev_${index}`,
+            disabled: index === 0, // Disable if on the first chunk
+          },
+          {
+            type: 2,
+            label: 'Next',
+            style: 1,
+            custom_id: `next_${index}`,
+            disabled: index === chunks.length - 1, // Disable if on the last chunk
+          },
+        ],
+      },
+    ],
+  };
+}
+
 async function sendPlaceholderResponse(res, placeholderResponse) {
   await res.send({
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -56,19 +112,53 @@ async function fetchAnswer(question) {
   return rawResponse || 'No answer provided.';
 }
 
-async function sendFollowUpResponse(endpoint, content) {
-  await fetch(`https://discord.com/api/v10/${endpoint}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bot ${process.env.DISCORD_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      content,
+async function sendResponse(endpoint, options) {
+  try {
+    const response = await fetch(`https://discord.com/api/v10/${endpoint}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bot ${process.env.DISCORD_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...options
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to send follow-up response. Status: ${response.status}, StatusText: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error sending follow-up response:', error);
+  }
+}
+
+async function sendFollowUpResponse(endpoint, followUpMessage) {
+  // Check if the follow-up message exceeds Discord's character limit (2000 characters)
+  if (followUpMessage.length > 2000) {
+    // Split response into chunks of 2000 characters
+    chunks = followUpMessage.match(/(.|[\r\n]){1,1990}(?=\s|$)/g) || [];
+    // Send the first chunk with prev/next buttons
+    await sendResponse(endpoint, createMessageWithButtons(0, chunks));
+  } else {
+    let options = {
+      content: followUpMessage,
       flags: InteractionResponseFlags.EPHEMERAL,
       components: [],
-    }),
-  });
+    };
+    await sendResponse(endpoint, options);
+  }
+}
+
+async function fetchFollowUpMessage(question, userId, endpoint) {
+  try {
+    // Call an external API to fetch the answer
+    const answer = await fetchAnswer(question);
+    return `\n> ${question}\n\nHere's what I found, <@${userId}>:\n\n${answer}`;
+  } catch (error) {
+    console.error('Error fetching answer:', error);
+    return `\n> ${question}\n\nSorry <@${userId}>, I couldn't fetch an answer to your question. Please try again later.`;
+  }
 }
 
 /**
@@ -97,42 +187,27 @@ app.post('/interactions', verifyKeyMiddleware(process.env.DISCORD_PUBLIC_KEY), a
     if (name === 'ask') {
       const context = req.body.context;
       const userId = context === 0 ? req.body.member.user.id : req.body.user.id
-      
+
       const question = data.options[0]?.value || 'No question provided';
       const endpoint = `webhooks/${process.env.DISCORD_APP_ID}/${req.body.token}/messages/@original`;
       const initialMessage = `\n> ${question}\n\nLet me find the answer for you. This might take a moment`
+      let followUpMessage = "Something went wrong! Please try again later.";
 
       // Send a placeholder response
       await sendPlaceholderResponse(res, initialMessage);
 
-      // Show animated dots in the message while waiting
-      let dotCount = 0;
-      const maxDots = 4;
-      let isFetching = true;
-
-      const interval = setInterval(() => {
-        if (isFetching) {
-          dotCount = (dotCount % maxDots) + 1;
-          sendFollowUpResponse(endpoint, `${initialMessage}${'.'.repeat(dotCount)}`);
-        }
-      }, 500);
-
-      // Create the follow-up response
-      let followUpMessage;
+      // Begin loading dots while fetching follow-up message
       try {
-        // Call an external API to fetch the answer
-        const answer = await fetchAnswer(question);
-        followUpMessage = `\n> ${question}\n\nHere's what I found, <@${userId}>:\n\n${answer}`;
-      } catch (error) {
-        console.error('Error fetching answer:', error);
-        followUpMessage = `\n> ${question}\n\nSorry <@${userId}>, I couldn't fetch an answer to your question. Please try again later.`;
+        startLoadingDots(endpoint, initialMessage)
+        followUpMessage = await fetchFollowUpMessage(question, userId, endpoint);
       } finally {
-        // Ensure cleanup and state updates
-        isFetching = false; // Mark fetching as complete
-        clearInterval(interval); // Stop the dot interval
+        stopLoadingDots()
       }
 
-      return sendFollowUpResponse(endpoint, followUpMessage);
+      // Send the follow-up response
+      sendFollowUpResponse(endpoint, followUpMessage);
+      
+      return;
   }
   
     // "test" command
@@ -149,6 +224,28 @@ app.post('/interactions', verifyKeyMiddleware(process.env.DISCORD_PUBLIC_KEY), a
 
     console.error(`unknown command: ${name}`);
     return res.status(400).json({ error: 'unknown command' });
+  }
+
+  // Handle button interactions
+  if (type === InteractionType.MESSAGE_COMPONENT) {
+    const customId = data.custom_id;
+
+    if (customId.startsWith('prev_') || customId.startsWith('next_')) {
+      const [action, index] = customId.split('_');
+      currentIndex = parseInt(index, 10);
+
+      if (action === 'prev' && currentIndex > 0) {
+        currentIndex -= 1;
+      } else if (action === 'next' && currentIndex < chunks.length - 1) {
+        currentIndex += 1;
+      }
+
+      // Respond with the updated message chunk
+      return res.send({
+        type: InteractionResponseType.UPDATE_MESSAGE,
+        data: createMessageWithButtons(currentIndex, chunks),
+      });
+    }
   }
 
   console.error('unknown interaction type', type);
