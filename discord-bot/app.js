@@ -187,9 +187,16 @@ app.post('/interactions', verifyKeyMiddleware(process.env.DISCORD_PUBLIC_KEY), a
     if (name === 'ask') {
       const context = req.body.context;
       const userId = context === 0 ? req.body.member.user.id : req.body.user.id
-
       const question = data.options[0]?.value || 'No question provided';
-      const endpoint = `webhooks/${process.env.DISCORD_APP_ID}/${req.body.token}/messages/@original`;
+
+      // Sanitize token before use in endpoint
+      const token = req.body.token;
+      const tokenRegex = /^[A-Za-z0-9-_]+$/;
+      if (!tokenRegex.test(token)) {
+        return res.status(400).json({ error: 'Invalid token format' });
+      }
+
+      const endpoint = `webhooks/${process.env.DISCORD_APP_ID}/${token}/messages/@original`;
       const initialMessage = `\n> ${question}\n\nLet me find the answer for you. This might take a moment`
       let followUpMessage = "Something went wrong! Please try again later.";
 
