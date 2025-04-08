@@ -62,16 +62,16 @@ function createMessageWithButtons(index, chunks) {
         type: 1, // Action Row container for buttons
         components: [
           {
-            type: 2, // Button Object
+            type: 2, // Button
             label: 'Previous',
-            style: 1, // Primary color
+            style: 1, // Primary color (blurple)
             custom_id: `prev_${index}`,
             disabled: index === 0, // Disable if on the first chunk
           },
           {
-            type: 2, // Button Object
+            type: 2, // Button
             label: 'Next',
-            style: 1,// Primary color
+            style: 1,// Primary color (blurple)
             custom_id: `next_${index}`,
             disabled: index === chunks.length - 1, // Disable if on the last chunk
           },
