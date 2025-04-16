@@ -101,6 +101,15 @@ def trigger_rebuild():
 
         print("Finished running get_knowledge_base.py script.")
 
+        # get Dockerfiles and compose files from samples repo
+        print("Running get_samples_examples.py script...")
+        result = subprocess.run(["python3", "get_samples_examples.py"], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Error running get_samples_examples.py script: {result.stderr}")
+            return jsonify({"error": "Error running get_samples_examples.py script", "details": result.stderr}), 500
+
+        print("Finished running get_samples_examples.py script.")
+
         print("Rebuilding embeddings...")
         try:
             rag_system.rebuild_embeddings()
