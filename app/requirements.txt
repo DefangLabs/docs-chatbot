@@ -5,7 +5,7 @@ scikit-learn==0.24.2
 segment-analytics-python==2.3.3
 numpy==1.22.0
 sentence-transformers==2.2.1
-torch==1.10.0
+torch==2.6.0
 huggingface_hub==0.8.1
 openai==0.28.0
 PyYAML==6.0.2
