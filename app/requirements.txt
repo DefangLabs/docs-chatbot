@@ -8,3 +8,4 @@ sentence-transformers==2.2.1
 torch==1.10.0
 huggingface_hub==0.8.1
 openai==0.28.0
+PyYAML==6.0.2

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, Response, stream_with_context, session
+from flask import Flask, request, jsonify, render_template, Response, stream_with_context, session, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 from rag_system import rag_system
 import hashlib
@@ -17,7 +17,6 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
 
 csrf = CSRFProtect(app)
-
 
 def validate_pow(nonce, data, difficulty):
     # Calculate the sha256 of the concatenated string of 32-bit X-Nonce header and raw body.
@@ -102,6 +101,15 @@ def trigger_rebuild():
 
         print("Finished running get_knowledge_base.py script.")
 
+        # get Dockerfiles and compose files from samples repo
+        print("Running get_samples_examples.py script...")
+        result = subprocess.run(["python3", "get_samples_examples.py"], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Error running get_samples_examples.py script: {result.stderr}")
+            return jsonify({"error": "Error running get_samples_examples.py script", "details": result.stderr}), 500
+
+        print("Finished running get_samples_examples.py script.")
+
         print("Rebuilding embeddings...")
         try:
             rag_system.rebuild_embeddings()
@@ -115,6 +123,13 @@ def trigger_rebuild():
     except Exception as e:
         print(f"Error in /trigger-rebuild endpoint: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route("/data/<path:name>")
+@csrf.exempt
+def download_file(name):
+    return send_from_directory(
+        "data", name, as_attachment=True
+    )
 
 if os.getenv('DEBUG') == '1':
     @app.route('/ask/debug', methods=['POST'])
