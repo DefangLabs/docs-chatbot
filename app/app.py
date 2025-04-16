@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, Response, stream_with_context, session
+from flask import Flask, request, jsonify, render_template, Response, stream_with_context, session, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 from rag_system import rag_system
 import hashlib
@@ -115,6 +115,12 @@ def trigger_rebuild():
     except Exception as e:
         print(f"Error in /trigger-rebuild endpoint: {e}")
         return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route("/data/<path:name>")
+def download_file(name):
+    return send_from_directory(
+        "data", name, as_attachment=True
+    )
 
 if os.getenv('DEBUG') == '1':
     @app.route('/ask/debug', methods=['POST'])

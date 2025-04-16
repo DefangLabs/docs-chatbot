@@ -41,7 +41,7 @@ This application demonstrates how to deploy a Flask-based Retrieval-Augmented Ge
 ## Configuration
 
 - The knowledge base is the all the markdown files in the Defang docs [website](https://docs.defang.io/docs/intro). The logic for parsing can be found in `./app/get_knowledge_base.py`.
-- The file `get_knowledge_base.py` parses every webpage as specified into paragraphs and writes to `knowledge_base.json` for the RAG retrieval.
+- The file `get_knowledge_base.py` parses every webpage as specified into paragraphs and writes to `./data/knowledge_base.json` for the RAG retrieval.
 - To obtain your own knowledge base, please feel free to implement your own parsing scheme.
 - for local development, please use the `compose.dev.yaml` file where as for production, please use the `compose.yaml`.
 

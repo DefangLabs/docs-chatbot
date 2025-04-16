@@ -12,7 +12,7 @@ openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class RAGSystem:
-    def __init__(self, knowledge_base_path='knowledge_base.json'):
+    def __init__(self, knowledge_base_path='./data/knowledge_base.json'):
         self.knowledge_base_path = knowledge_base_path
         self.knowledge_base = self.load_knowledge_base()
         self.model = SentenceTransformer('all-MiniLM-L6-v2')

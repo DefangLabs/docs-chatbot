@@ -5,6 +5,8 @@ import re
 import json
 from git import Repo
 
+kb_file_path = './data/knowledge_base.json'
+
 def clean_tmp(dir_path):
     """ Clears out all contents of the specified directory except for prebuild.sh """
     for item in os.listdir(dir_path):
@@ -80,14 +82,14 @@ def parse_markdown():
 
 def reset_knowledge_base():
     """ Resets or initializes the knowledge base JSON file. """
-    with open('./knowledge_base.json', 'w') as output_file:
+    with open(kb_file_path, 'w') as output_file:
         json.dump([], output_file)
 
 def parse_markdown_file_to_json(file_path):
     """ Parses individual markdown file and adds its content to JSON """
     try:
         # Load existing content if the file exists
-        with open('./knowledge_base.json', 'r') as existing_file:
+        with open(kb_file_path, 'r') as existing_file:
             json_output = json.load(existing_file)
             current_id = len(json_output) + 1  # Start ID from the next available number
     except (FileNotFoundError, json.JSONDecodeError):
@@ -147,15 +149,15 @@ def parse_markdown_file_to_json(file_path):
             })
             current_id += 1
 
-    # Write the augmented JSON output to knowledge_base.json
-    with open('./knowledge_base.json', 'w', encoding='utf-8') as output_file:
+    # Write the augmented JSON output to ./data/knowledge_base.json
+    with open(kb_file_path, 'w', encoding='utf-8') as output_file:
         json.dump(json_output, output_file, indent=2, ensure_ascii=False)
 
 def parse_cli_markdown(file_path):
     """ Parses CLI-specific markdown files """
     try:
         # Load existing content if the file exists
-        with open('./knowledge_base.json', 'r') as existing_file:
+        with open(kb_file_path, 'r') as existing_file:
             json_output = json.load(existing_file)
             current_id = len(json_output) + 1  # Start ID from the next available number
     except (FileNotFoundError, json.JSONDecodeError):
@@ -187,8 +189,8 @@ def parse_cli_markdown(file_path):
         })
         current_id += 1
 
-    # Write the augmented JSON output to knowledge_base.json
-    with open('./knowledge_base.json', 'w', encoding='utf-8') as output_file:
+    # Write the augmented JSON output to data/knowledge_base.json
+    with open(kb_file_path, 'w', encoding='utf-8') as output_file:
         json.dump(json_output, output_file, indent=2, ensure_ascii=False)
 
 def recursive_parse_directory(root_dir):
