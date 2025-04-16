@@ -18,7 +18,6 @@ app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
 
 csrf = CSRFProtect(app)
 
-
 def validate_pow(nonce, data, difficulty):
     # Calculate the sha256 of the concatenated string of 32-bit X-Nonce header and raw body.
     # This calculation has to match the code on the client side, in index.html.
@@ -117,6 +116,7 @@ def trigger_rebuild():
         return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route("/data/<path:name>")
+@csrf.exempt
 def download_file(name):
     return send_from_directory(
         "data", name, as_attachment=True
