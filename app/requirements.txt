@@ -1,7 +1,7 @@
 Flask==2.0.1
 Flask-WTF==1.2.2
 Werkzeug==2.0.3
-scikit-learn==0.24.2
+scikit-learn==1.5.1
 segment-analytics-python==2.3.3
 numpy==1.22.0
 sentence-transformers==2.2.1
