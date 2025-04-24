@@ -10,6 +10,7 @@ import traceback
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
+rag_role = os.getenv("RAG_ROLE", "system")
 
 class RAGSystem:
     def __init__(self, knowledge_base_path='./data/knowledge_base.json'):
@@ -120,7 +121,7 @@ class RAGSystem:
         citations = self.get_citations(retrieved_docs)
 
         messages = [{
-            "role": "system",
+            "role": rag_role,
             "content": (
                 "Your name is Cloude (with an e at the end), you are a helpful AI assistant created by DefangLabs to help users learn about the cloud deployment tool Defang. "
                 "Your task is to provide positive answers about the cloud deployment tool Defang."
@@ -149,11 +150,17 @@ class RAGSystem:
 
             collected_messages = []
             for chunk in stream:
-                if chunk['choices'][0]['finish_reason'] is not None:
+                choice = chunk.get("choices", [{}])[0]
+
+                # End of stream signal (if provided)
+                if choice.get("finish_reason") is not None:
                     break
-                content = chunk['choices'][0]['delta'].get('content', '')
-                collected_messages.append(content)
-                yield content
+
+                # Get streamed token (if present)
+                content = choice.get("delta", {}).get("content", "")
+                if content:
+                    collected_messages.append(content)
+                    yield content
 
             if len(citations) > 0:
                 yield "\n\nReferences:\n" + "\n".join(citations)
