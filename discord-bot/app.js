@@ -39,7 +39,6 @@ function startLoadingDots(endpoint, initialMessage) {
     const loadingMessage = `${initialMessage}${'.'.repeat(dotCount)}`;
     const options = {
       content: loadingMessage,
-      flags: InteractionResponseFlags.EPHEMERAL,
       components: [],
     };
 
@@ -86,7 +85,6 @@ async function sendPlaceholderResponse(res, placeholderResponse) {
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       content: placeholderResponse,
-      flags: InteractionResponseFlags.EPHEMERAL,
       components: [], 
     },
   });
@@ -98,6 +96,7 @@ async function fetchAnswer(question) {
     headers: {
       'Authorization': `Bearer ${process.env.ASK_TOKEN}`,
       'Content-Type': 'application/json',
+      'User-Agent': 'Discord Bot',
     },
     body: JSON.stringify({ query: question }),
   });
@@ -143,7 +142,6 @@ async function sendFollowUpResponse(endpoint, followUpMessage) {
   } else {
     let options = {
       content: followUpMessage,
-      flags: InteractionResponseFlags.EPHEMERAL,
       components: [],
     };
     await sendResponse(endpoint, options);
