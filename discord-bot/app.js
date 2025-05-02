@@ -96,6 +96,7 @@ async function fetchAnswer(question) {
     headers: {
       'Authorization': `Bearer ${process.env.ASK_TOKEN}`,
       'Content-Type': 'application/json',
+      'User-Agent': 'Discord Bot',
     },
     body: JSON.stringify({ query: question }),
   });

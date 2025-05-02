@@ -53,11 +53,14 @@ def handle_ask_request(request, session):
             full_response = "No response generated"
 
         if analytics.write_key:
+            # Determine the source based on the user agent
+            user_agent = request.headers.get('User-Agent', '')
+            source = 'Ask Defang Discord Bot' if 'Discord Bot' in user_agent else 'Ask Defang Website'
             # Track the query and response
             analytics.track(
                 anonymous_id=anonymous_id,
                 event='Chatbot Question submitted',
-                properties={'query': query, 'response': full_response, 'source': 'Ask Defang'}
+                properties={'query': query, 'response': full_response, 'source': source}
             )
 
     return Response(stream_with_context(generate()), content_type='text/markdown')
