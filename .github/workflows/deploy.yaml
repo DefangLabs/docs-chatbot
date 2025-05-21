@@ -32,6 +32,7 @@ jobs:
           role-to-assume: arn:aws:iam::407839483216:role/admin
 
       - name: Update knowledge_base.json
+        working-directory: ./app
         run: |
           python3 get_knowledge_base.py
 
@@ -41,7 +42,7 @@ jobs:
           config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY
           mode: production
           provider: aws
-          
+
         env:
           ASK_TOKEN: ${{ secrets.ASK_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -51,4 +52,3 @@ jobs:
           DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_PUBLIC_KEY: ${{ secrets.DISCORD_PUBLIC_KEY }}
-          
