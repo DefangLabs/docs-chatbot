@@ -145,13 +145,17 @@ def parse_markdown_file_to_json(file_path):
                 "id": current_id,
                 "about": about,
                 "text": text,
-                "path": file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
+                "path": adjust_knowledge_base_entry_path(file_path)  # Adjust path format
             })
             current_id += 1
 
     # Write the augmented JSON output to ./data/knowledge_base.json
     with open(kb_file_path, 'w', encoding='utf-8') as output_file:
         json.dump(json_output, output_file, indent=2, ensure_ascii=False)
+
+def adjust_knowledge_base_entry_path(file_path):
+    """ Adjusts the file path format for storage. """
+    return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", ""))
 
 def parse_cli_markdown(file_path):
     """ Parses CLI-specific markdown files """
