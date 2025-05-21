@@ -35,11 +35,19 @@ jobs:
           role-duration-seconds: 1200
           role-to-assume: arn:aws:iam::407839483216:role/admin
 
+      - name: Set up cache for pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('app/requirements.txt') }}
+
+      - name: Install Python dependencies
+        working-directory: ./app
+        run: pip install -r requirements.txt
+
       - name: Update knowledge_base.json
         working-directory: ./app
-        run: |
-          pip install -r requirements.txt
-          python3 get_knowledge_base.py
+        run: python3 get_knowledge_base.py
 
       - name: Deploy
         uses: DefangLabs/defang-github-action@v1.1.3
