@@ -33,7 +33,6 @@ jobs:
 
       - name: Update knowledge_base.json
         run: |
-          echo "Updating knowledge_base.json"
           python3 get_knowledge_base.py
 
       - name: Deploy
