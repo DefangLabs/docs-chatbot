@@ -31,6 +31,10 @@ jobs:
           role-duration-seconds: 1200
           role-to-assume: arn:aws:iam::407839483216:role/admin
 
+      - name: Update knowledge_base.json
+        run: |
+          python3 get_knowledge_base.py
+
       - name: Deploy
         uses: DefangLabs/defang-github-action@v1.1.3
         with:
