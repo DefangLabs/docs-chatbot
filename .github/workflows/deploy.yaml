@@ -34,6 +34,7 @@ jobs:
       - name: Update knowledge_base.json
         working-directory: ./app
         run: |
+          pip install -r requirements.txt
           python3 get_knowledge_base.py
 
       - name: Deploy
