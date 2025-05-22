@@ -8,7 +8,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "mounts": [
-    "source=/Users/jordan/.aws,target=/home/vscode/.aws,type=bind,consistency=cached",
+    // "source=/Users/user/.aws,target=/home/vscode/.aws,type=bind,consistency=cached",
   ],
   "forwardPorts": [
     5050,
