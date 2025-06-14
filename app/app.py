@@ -272,7 +272,7 @@ def post_intercom_reply(conversation_id, response_text):
     return response.json(), response.status_code
 
 
-# Endpoint to get the whole conversation thread in Intercom and send an LLM answer to user
+# Endpoint to get a whole conversation thread in Intercom and send an LLM answer to user
 @app.route('/intercom/conversations/<conversation_id>', methods=['GET'])
 @csrf.exempt
 def get_intercom_conversation(conversation_id):
@@ -335,7 +335,7 @@ def get_intercom_conversation(conversation_id):
 
     return post_intercom_reply(conversation_id, llm_response)
 
-
+# Endpoint to handle incoming webhooks from Intercom
 @app.route('/intercom-webhook', methods=['POST'])
 @csrf.exempt
 def handle_webhook():
