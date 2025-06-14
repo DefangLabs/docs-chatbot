@@ -167,7 +167,7 @@ if os.getenv('DEBUG') == '1':
 @csrf.exempt
 def get_intercom_conversation(conversation_id):
     logger.info(f"Received request to get conversation {conversation_id}")
-    # id = "38091"
+
     id = conversation_id
     url = "https://api.intercom.io/conversations/" + id
     token = os.getenv('INTERCOM_TOKEN')
