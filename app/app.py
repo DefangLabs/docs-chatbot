@@ -9,6 +9,20 @@ import uuid
 import sys
 import traceback
 
+import requests
+from html.parser import HTMLParser
+from werkzeug.test import EnvironBuilder
+from werkzeug.wrappers import Request
+import json
+import logging
+
+import redis
+
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
 
 app = Flask(__name__, static_folder='templates/static')
@@ -17,6 +31,9 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
 
 csrf = CSRFProtect(app)
+
+# Initialize Redis connection
+r = redis.from_url(os.getenv('REDIS_URL'), decode_responses=True)
 
 def validate_pow(nonce, data, difficulty):
     # Calculate the sha256 of the concatenated string of 32-bit X-Nonce header and raw body.
@@ -143,6 +160,217 @@ if os.getenv('DEBUG') == '1':
             return jsonify({"error": "Query is required"}), 400
         context = rag_system.get_context(query)
         return jsonify({"context": context})
+
+
+# Endpoint to get the whole conversation thread in Intercom and send an LLM answer to user
+@app.route('/intercom/conversations/<conversation_id>', methods=['GET'])
+@csrf.exempt
+def get_intercom_conversation(conversation_id):
+    logger.info(f"Received request to get conversation {conversation_id}")
+    # id = "38091"
+    id = conversation_id
+    url = "https://api.intercom.io/conversations/" + id
+    token = os.getenv('INTERCOM_TOKEN')
+    if not token:
+        return jsonify({"error": "Intercom token not set"}), 500
+
+    headers = {
+    "Content-Type": "application/json",
+    "Intercom-Version": "2.13",
+    "Authorization": "Bearer " + token
+    }
+
+    response = requests.get(url, headers=headers)
+
+    # extract conversation parts into a simplified json format
+    def extract_conversation_parts(response):
+        data = response.json()
+        parts = data.get('conversation_parts', {}).get('conversation_parts', [])
+        extracted_parts = []
+        for part in parts:
+            body = part.get('body', '')
+            if not body:
+                continue
+            author = part.get('author', {})
+            created_at = part.get('created_at')
+            extracted_parts.append({'body': body, 'author': author, 'created_at': created_at})
+        return extracted_parts
+
+    result = extract_conversation_parts(response)
+
+    logger.info(f"Extracted {len(result)} parts from conversation {conversation_id}")
+
+    def extract_latest_user_messages(conversation_parts):
+        # Get the latest user entries in the conversation
+        # Find the index of the last non-user entry
+        last_non_user_idx = None
+        for idx in range(len(conversation_parts) - 1, -1, -1):
+            if conversation_parts[idx].get('author', {}).get('type') != 'user':
+                last_non_user_idx = idx
+                break
+
+        # Collect user entries after the last non-user entry
+        if last_non_user_idx is not None:
+            last_user_entries = [
+                part for part in conversation_parts[last_non_user_idx + 1 :]
+                if part.get('author', {}).get('type') == 'user'
+            ]
+        else:
+            # If there is no non-user entry, include all user entries
+            last_user_entries = [
+                part for part in conversation_parts if part.get('author', {}).get('type') == 'user'
+            ]
+
+        # If no user entries found, return None
+        if not last_user_entries:
+            return None
+
+        # Only keep the 'body' field from each user entry
+        bodies = [part['body'] for part in last_user_entries if 'body' in part]
+
+        # Parse and concatenate all user message bodies as plain text
+        parsed_bodies = []
+        for html_body in bodies:
+            parsed_bodies.append(parse_html_to_text(html_body))
+
+        # Join all parsed user messages into a single string
+        joined_text = " ".join(parsed_bodies)
+        return joined_text
+
+    joined_text = extract_latest_user_messages(result)
+
+    # If no user entries found, return a 204 error
+    if not joined_text:
+        return jsonify({"info": "No entries made by user found."}), 204
+
+    logger.info(f"Joined user messages: {joined_text}")
+
+    # Use the extracted user message as a query to the RAG system and stream the answer
+    def generate():
+        full_response = ""
+        try:
+            for token in rag_system.answer_query_stream(joined_text):
+                yield token
+                full_response += token
+        except Exception as e:
+            print(f"Error in /ask endpoint: {e}", file=sys.stderr)
+            traceback.print_exc()
+            yield "Internal Server Error"
+
+        if not full_response:
+            full_response = "No response generated"
+
+        if analytics.write_key:
+            # Track the query and response
+            # Use a deterministic, non-reversible hash for anonymous_id for Intercom conversations
+            anon_hash = hashlib.sha256(f"intercom-{conversation_id}".encode()).hexdigest()
+            analytics.track(
+                anonymous_id=anon_hash,
+                event='Chatbot Question submitted',
+                properties={'query': joined_text, 'response': full_response, 'source': 'Intercom Conversation'}
+            )
+            
+    llm_response = "".join([token for token in generate()])
+    llm_response = llm_response + " 🤖" # Add a marker to indicate the end of the response
+
+    logger.info(f"LLM response: {llm_response}")
+
+    # Send reply through Intercom API
+    def post_intercom_reply(conversation_id, response_text):
+        url = f"https://api.intercom.io/conversations/{conversation_id}/reply"
+        token = os.getenv('INTERCOM_TOKEN')
+        if not token:
+            return jsonify({"error": "Intercom token not set"}), 500
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        }
+
+        payload = {
+            "message_type": "comment",
+            "type": "admin",
+            "admin_id": int(os.getenv('INTERCOM_ADMIN_ID')),
+            "body": response_text
+        }
+
+        response = requests.post(url, json=payload, headers=headers)
+        logger.info(f"Posted reply to Intercom; response status code: {response.status_code}")
+
+        return response.json(), response.status_code
+    
+    return post_intercom_reply(conversation_id, llm_response)
+
+
+class BodyHTMLParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text = []
+
+    def handle_data(self, data):
+        self.text.append(data)
+
+    def get_text(self):
+        return ''.join(self.text)
+
+
+# Helper function to parse HTML into plain text
+def parse_html_to_text(html_content):
+    parser = BodyHTMLParser()
+    parser.feed(html_content)
+    return parser.get_text()
+
+
+# Store conversation ID in Redis
+def set_conversation_human_replied(conversation_id):
+    try:
+        # Use a Redis set to avoid duplicates
+        r.sadd('admin_replied_conversations', conversation_id)
+        logger.info(f"Added conversation_id {conversation_id} to Redis set admin_replied_conversations")
+    except Exception as e:
+        logger.error(f"Error adding conversation_id to Redis: {e}")
+    
+
+
+@app.route('/intercom-webhook', methods=['POST'])
+@csrf.exempt
+def handle_webhook():
+    data = request.json
+
+    logger.info(f"Received Intercom webhook: {data}")
+    conversation_id = data.get('data', {}).get('item', {}).get('id')
+
+    # Check if conversation is already marked as human admin-replied
+    try:
+        if r.sismember('admin_replied_conversations', conversation_id):
+            logger.info(f"Conversation {conversation_id} already marked as human admin-replied. Skipping further processing.")
+            return 'OK'
+    except Exception as e:
+        logger.error(f"Error checking conversation_id in Redis: {e}")
+
+    # Check for admin replied webhook
+    topic = data.get('topic')
+    logger.info(f"Webhook topic: {topic}")
+    if topic == 'conversation.admin.replied':
+
+        # Check if the admin is a bot or human based on presence of a message marker (e.g., "🤖")
+        last_message = data.get('data', {}).get('item', {}).get('conversation_parts', {}).get('conversation_parts', [])[-1].get('body', '')
+        last_message_text = parse_html_to_text(last_message)
+
+        logger.info(f"Parsed last message text: {last_message_text}")
+        if last_message_text and last_message_text.endswith("🤖"):
+            logger.info(f"Last message in conversation {conversation_id} ends with the marker 🤖")
+            logger.info(f"Detected bot admin reply in conversation {conversation_id}; skipping further processing.")
+        else:
+            logger.info(f"Detected human admin reply in conversation {conversation_id}; marking as human admin-replied...")
+            set_conversation_human_replied(conversation_id)
+            logger.info(f"Successfully marked conversation {conversation_id} as human admin-replied.")
+        return 'OK'
+    else:
+        logger.info(f"Conversation {conversation_id} is a user reply; fetching an answer from LLM...")
+        get_intercom_conversation(conversation_id)
+    return 'OK'
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)

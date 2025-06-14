@@ -20,6 +20,11 @@ services:
         target: /app
     command: flask run --host=0.0.0.0 --port=5050
 
+  redis:
+    extends:
+      file: compose.yaml
+      service: redis
+
   llm:
     extends:
       file: compose.yaml
@@ -33,7 +38,7 @@ services:
         mode: ingress
     environment:
       - AWS_REGION=us-west-2
-      - AWS_PROFILE=defang-lab
+      - AWS_PROFILE=defang-sandbox
       - PORT=5051
     volumes:
       - type: bind
