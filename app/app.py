@@ -233,15 +233,15 @@ def parse_html_to_text(html_content):
 def set_conversation_human_replied(conversation_id):
     try:
         # Use a Redis set to avoid duplicates
-        r.sadd('admin_replied_conversations', conversation_id)
+        r.set(conversation_id, '1', ex=60*60*24) # Set TTL expiration to 1 day
         logger.info(f"Added conversation_id {conversation_id} to Redis set admin_replied_conversations")
     except Exception as e:
         logger.error(f"Error adding conversation_id to Redis: {e}")
     
 # Check if a conversation is already marked as replied by a human admin
-def is_conversation_admin_replied(conversation_id):
+def is_conversation_human_replied(conversation_id):
     try:
-        return r.sismember('admin_replied_conversations', conversation_id)
+        return r.exists(conversation_id)
     except Exception as e:
         logger.error(f"Error checking conversation_id in Redis: {e}")
         return False
@@ -344,11 +344,6 @@ def handle_webhook():
     logger.info(f"Received Intercom webhook: {data}")
     conversation_id = data.get('data', {}).get('item', {}).get('id')
 
-    # Check if conversation is already marked as replied by a human admin and if so, skip LLM response
-    if is_conversation_admin_replied(conversation_id):
-        logger.info(f"Conversation {conversation_id} already marked as human admin-replied. Skipping further processing.")
-        return 'OK'
-
     # Check for the type of the webhook event
     topic = data.get('topic')
     logger.info(f"Webhook topic: {topic}")
@@ -362,7 +357,7 @@ def handle_webhook():
         if last_message_text and last_message_text.endswith("🤖"):
             # If the last message ends with the marker, it indicates a bot reply
             logger.info(f"Last message in conversation {conversation_id} ends with the marker 🤖")
-            logger.info(f"Detected bot admin reply in conversation {conversation_id}; skipping further processing.")
+            logger.info(f"Detected bot admin reply in conversation {conversation_id}; no action taken.")
         else:
             # If the last message does not end with the marker, it indicates a human reply
             logger.info(f"Detected human admin reply in conversation {conversation_id}; marking as human admin-replied...")
@@ -370,11 +365,17 @@ def handle_webhook():
             set_conversation_human_replied(conversation_id)
             logger.info(f"Successfully marked conversation {conversation_id} as human admin-replied.")
         return 'OK'
-    else:
+    elif topic == 'conversation.user.replied':
         # In this case, the webhook event is a user reply, not an admin reply
-        logger.info(f"Conversation {conversation_id} is a user reply; fetching an answer from LLM...")
+        # Check if the conversation was replied previously by a human admin
+        if is_conversation_human_replied(conversation_id):
+            logger.info(f"Conversation {conversation_id} already marked as human admin-replied; no action taken.")
+            return 'OK'
         # Fetch the conversation and generate an LLM answer for the user
+        logger.info(f"Detected a user reply in conversation {conversation_id}; fetching an answer from LLM...")
         get_intercom_conversation(conversation_id)
+    else:
+        logger.info(f"Received webhook for unsupported topic: {topic}; no action taken.")
     return 'OK'
 
 
