@@ -54,6 +54,31 @@ def validate_pow(nonce, data, difficulty):
     first_uint32 = int.from_bytes(calculated_hash[:4], byteorder='big')
     return first_uint32 <= difficulty
 
+# Shared function to generate response stream from RAG system
+def generate(query, source, anonymous_id):
+    full_response = ""
+    try:
+        for token in rag_system.answer_query_stream(query):
+            yield token
+            full_response += token
+    except Exception as e:
+        print(f"Error in RAG system: {e}", file=sys.stderr)
+        traceback.print_exc()
+        yield "Internal Server Error"
+
+    if not full_response:
+        full_response = "No response generated"
+
+    if analytics.write_key:
+        # Track the query and response
+        analytics.track(
+            anonymous_id=anonymous_id,
+            event='Chatbot Question submitted',
+            properties={'query': query, 'response': full_response, 'source': source}
+        )
+    
+    return full_response
+
 def handle_ask_request(request, session):
     data = request.get_json()
     query = data.get('query')
@@ -65,33 +90,13 @@ def handle_ask_request(request, session):
     if 'anonymous_id' not in session:
         session['anonymous_id'] = str(uuid.uuid4())
     anonymous_id = session['anonymous_id']
+    
+    # Determine the source based on the user agent
+    user_agent = request.headers.get('User-Agent', '')
+    source = 'Ask Defang Discord Bot' if 'Discord Bot' in user_agent else 'Ask Defang Website'
 
-    def generate():
-        full_response = ""
-        try:
-            for token in rag_system.answer_query_stream(query):
-                yield token
-                full_response += token
-        except Exception as e:
-            print(f"Error in /ask endpoint: {e}", file=sys.stderr)
-            traceback.print_exc()
-            yield "Internal Server Error"
-
-        if not full_response:
-            full_response = "No response generated"
-
-        if analytics.write_key:
-            # Determine the source based on the user agent
-            user_agent = request.headers.get('User-Agent', '')
-            source = 'Ask Defang Discord Bot' if 'Discord Bot' in user_agent else 'Ask Defang Website'
-            # Track the query and response
-            analytics.track(
-                anonymous_id=anonymous_id,
-                event='Chatbot Question submitted',
-                properties={'query': query, 'response': full_response, 'source': source}
-            )
-
-    return Response(stream_with_context(generate()), content_type='text/markdown')
+    # Use the shared generate function directly
+    return Response(stream_with_context(generate(query, source, anonymous_id)), content_type='text/markdown')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -304,32 +309,11 @@ def get_intercom_conversation(conversation_id):
 
     logger.info(f"Joined user messages: {joined_text}")
 
-    # Use the extracted user message as a query to the RAG system and stream the answer
-    def generate():
-        full_response = ""
-        try:
-            for token in rag_system.answer_query_stream(joined_text):
-                yield token
-                full_response += token
-        except Exception as e:
-            print(f"Error in /ask endpoint: {e}", file=sys.stderr)
-            traceback.print_exc()
-            yield "Internal Server Error"
-
-        if not full_response:
-            full_response = "No response generated"
-
-        if analytics.write_key:
-            # Track the query and response
-            # Use a deterministic, non-reversible hash for anonymous_id for Intercom conversations
-            anon_hash = hashlib.sha256(f"intercom-{conversation_id}".encode()).hexdigest()
-            analytics.track(
-                anonymous_id=anon_hash,
-                event='Chatbot Question submitted',
-                properties={'query': joined_text, 'response': full_response, 'source': 'Intercom Conversation'}
-            )
-            
-    llm_response = "".join([token for token in generate()])
+    # Use a deterministic, non-reversible hash for anonymous_id for Intercom conversations
+    anon_hash = hashlib.sha256(f"intercom-{conversation_id}".encode()).hexdigest()
+    
+    # Use the shared generate function
+    llm_response = "".join(generate(joined_text, 'Intercom Conversation', anon_hash))
     llm_response = llm_response + " 🤖" # Add a marker to indicate the end of the response
 
     logger.info(f"LLM response: {llm_response}")
