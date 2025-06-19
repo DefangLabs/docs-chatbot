@@ -16,7 +16,8 @@ from werkzeug.wrappers import Request
 import json
 import logging
 import redis
-
+from dotenv import load_dotenv
+load_dotenv()
 class BodyHTMLParser(HTMLParser):
     def __init__(self):
         super().__init__()
