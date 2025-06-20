@@ -52,7 +52,7 @@ jobs:
       - name: Deploy
         uses: DefangLabs/defang-github-action@v1.1.3
         with:
-          config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY
+          config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY INTERCOM_TOKEN
           mode: production
           provider: aws
 
@@ -65,3 +65,4 @@ jobs:
           DISCORD_APP_ID: ${{ secrets.DISCORD_APP_ID }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_PUBLIC_KEY: ${{ secrets.DISCORD_PUBLIC_KEY }}
+          INTERCOM_TOKEN: ${{ secrets.INTERCOM_TOKEN }}
