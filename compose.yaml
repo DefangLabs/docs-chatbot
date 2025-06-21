@@ -23,6 +23,7 @@ services:
       OPENAI_BASE_URL: "http://llm/api/v1"
       MODEL: "anthropic.claude-3-haiku-20240307-v1:0"
       INTERCOM_TOKEN:
+      INTERCOM_ADMIN_ID:
       REDIS_URL: redis://redis:6379/0
     command: uwsgi --http 0.0.0.0:5050 --wsgi-file app.py --callable app --processes 4 --threads 2
     deploy:
