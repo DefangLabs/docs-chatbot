@@ -278,9 +278,7 @@ def post_intercom_reply(conversation_id, response_text):
     return response.json(), response.status_code
 
 
-# Endpoint to get a whole conversation thread in Intercom and send an LLM answer to user
-@app.route('/intercom/conversations/<conversation_id>', methods=['GET'])
-@csrf.exempt
+# Retrieves a whole conversation thread in Intercom and returns an LLM answer to the user
 def get_intercom_conversation(conversation_id):
     logger.info(f"Received request to get conversation {conversation_id}")
 
