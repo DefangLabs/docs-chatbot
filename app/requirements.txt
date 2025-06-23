@@ -11,5 +11,4 @@ openai==0.28.0
 PyYAML==6.0.2
 GitPython==3.1.44
 redis==6.2.0
-python-dotenv===1.1.0
-fakeredis==2.30.0
+fakeredis==2.30.1
