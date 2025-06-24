@@ -8,16 +8,16 @@ redis_mock = fakeredis.FakeStrictRedis(decode_responses=True)
 patch('redis.from_url', return_value=redis_mock).start()
 
 # Now import app, after the patch is applied
-import app
+import intercom
 
-class TestApp(unittest.TestCase):
+class TestIntercom(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         # Initialize the app or any required resources
-        cls.app = app
+        cls.app = intercom
         # Replace the Redis client in app with our mock
-        app.r = redis_mock
+        intercom.r = redis_mock
         print("Successfully set up App class for testing!")
 
     def test_parse_html_to_text(self):
@@ -114,15 +114,15 @@ class TestApp(unittest.TestCase):
     def test_is_conversation_human_replied_check_false(self):
         conversation_id = "test_convo_id_1234"
         self.app.r.delete(conversation_id)
-        result = self.app.is_conversation_human_replied(conversation_id)
+        result = self.app.is_conversation_human_replied(conversation_id, redis_mock)
         self.assertFalse(result)
         print("test_is_conversation_human_replied_check_false passed successfully.")
 
     def test_set_conversation_human_replied_and_check_true(self):
         conversation_id = "test_convo_id_1235"
         self.app.r.delete(conversation_id)
-        self.app.set_conversation_human_replied(conversation_id)
-        result = self.app.is_conversation_human_replied(conversation_id)
+        self.app.set_conversation_human_replied(conversation_id, redis_mock)
+        result = self.app.is_conversation_human_replied(conversation_id, redis_mock)
         self.assertTrue(result)
         self.app.r.delete(conversation_id)
         print("test_set_conversation_human_replied_and_check_true passed successfully.")
@@ -130,7 +130,7 @@ class TestApp(unittest.TestCase):
     def test_set_conversation_human_replied_ttl_exists(self):
         conversation_id = "test_convo_id_ttl"
         self.app.r.delete(conversation_id)
-        self.app.set_conversation_human_replied(conversation_id)
+        self.app.set_conversation_human_replied(conversation_id, redis_mock)
         ttl = self.app.r.ttl(conversation_id)
         self.assertGreater(ttl, 0)
         self.app.r.delete(conversation_id)

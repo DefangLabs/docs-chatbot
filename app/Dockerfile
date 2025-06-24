@@ -43,7 +43,7 @@ RUN chmod +x .tmp/prebuild.sh
 EXPOSE 5050
 
 # Run test file
-RUN python test_app.py
+RUN python test_intercom.py
 
 # Define environment variable for Flask
 ENV FLASK_APP=app.py
