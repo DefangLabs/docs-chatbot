@@ -52,7 +52,7 @@ def get_user_query(response, conversation_id):
     joined_text = extract_latest_user_messages(result)
     if not joined_text:
         return "No entries made by user found.", 204
-    return joined_text, result.status_code
+    return joined_text, 200
 
 # Extract conversation parts into a simplified JSON format
 def extract_conversation_parts(response):
@@ -163,10 +163,10 @@ def answer_intercom_conversation(conversation_id):
         return conversation
 
     # Extracts the user query (which are latest user messages joined into a single string) from conversation history
-    user_query = get_user_query(conversation, conversation_id)
+    user_query, status_code = get_user_query(conversation, conversation_id)
     # If a tuple is returned, it is an error response
-    if isinstance(user_query, tuple):
-        return user_query
+    if status_code != 200:
+        return jsonify(user_query), status_code
 
     logger.info(f"Joined user messages: {user_query}")
 
