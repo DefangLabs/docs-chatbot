@@ -12,7 +12,7 @@ from werkzeug.wrappers import Request
 
 import logging
 import redis
-from intercom import parse_html_to_text, set_conversation_human_replied, is_conversation_human_replied, answer_intercom_conversation
+from intercom import parse_html_to_text, set_conversation_human_replied, is_conversation_human_replied, answer_intercom_conversation, check_intercom_ip
 from utils import generate
 
 # Configure logging
@@ -144,6 +144,8 @@ if os.getenv('DEBUG') == '1':
 @app.route('/intercom-webhook', methods=['POST'])
 @csrf.exempt
 def handle_webhook():
+    if not check_intercom_ip(request):
+        return jsonify({"error": "Unauthorized IP"}), 403
 
     data = request.json
 

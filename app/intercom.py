@@ -180,3 +180,23 @@ def answer_intercom_conversation(conversation_id):
     logger.info(f"LLM response: {llm_response}")
 
     return post_intercom_reply(conversation_id, llm_response)
+
+def check_intercom_ip(request):
+        # Restrict webhook access to a list of allowed IP addresses
+    INTERCOM_ALLOWED_IPS = [
+        "34.231.68.152",
+        "34.197.76.213",
+        "35.171.78.91",
+        "35.169.138.21",
+        "52.70.27.159",
+        "52.44.63.161"
+    ]
+    remote_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    # X-Forwarded-For may contain a comma-separated list; take the first IP
+    remote_ip = remote_ip.split(',')[0].strip() if remote_ip else None
+
+    if remote_ip not in INTERCOM_ALLOWED_IPS:
+        # logger.info(f"Rejected webhook from unauthorized IP: {remote_ip}")
+        return False
+    
+    return True

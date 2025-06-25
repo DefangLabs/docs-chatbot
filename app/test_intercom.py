@@ -146,5 +146,55 @@ class TestIntercom(unittest.TestCase):
         self.assertFalse(exists)
         print("test_set_redis_ttl_expiry passed successfully.")
 
+    def test_check_intercom_ip_allowed(self):
+        # Simulate a request with an allowed IP in X-Forwarded-For
+        class DummyRequest:
+            headers = {'X-Forwarded-For': '34.231.68.152'}
+            remote_addr = '1.2.3.4'
+        req = DummyRequest()
+        result = self.app.check_intercom_ip(req)
+        self.assertTrue(result)
+        print("test_check_intercom_ip_allowed passed successfully.")
+
+    def test_check_intercom_ip_allowed_remote_addr(self):
+        # Simulate a request with allowed IP only in remote_addr
+        class DummyRequest:
+            headers = {}
+            remote_addr = '34.197.76.213'
+        req = DummyRequest()
+        result = self.app.check_intercom_ip(req)
+        self.assertTrue(result)
+        print("test_check_intercom_ip_allowed_remote_addr passed successfully.")
+
+    def test_check_intercom_ip_not_allowed(self):
+        # Simulate a request with a non-allowed IP
+        class DummyRequest:
+            headers = {'X-Forwarded-For': '8.8.8.8'}
+            remote_addr = '8.8.4.4'
+        req = DummyRequest()
+        result = self.app.check_intercom_ip(req)
+        self.assertFalse(result)
+        print("test_check_intercom_ip_not_allowed passed successfully.")
+
+    def test_check_intercom_ip_multiple_forwarded(self):
+        # Simulate a request with multiple IPs in X-Forwarded-For
+        class DummyRequest:
+            headers = {'X-Forwarded-For': '8.8.8.8, 34.231.68.152'}
+            remote_addr = '8.8.4.4'
+        req = DummyRequest()
+        result = self.app.check_intercom_ip(req)
+        self.assertFalse(result)
+        print("test_check_intercom_ip_multiple_forwarded passed successfully.")
+
+    def test_check_intercom_ip_none(self):
+        # Simulate a request with no IPs
+        class DummyRequest:
+            headers = {}
+            remote_addr = None
+        req = DummyRequest()
+        result = self.app.check_intercom_ip(req)
+        self.assertFalse(result)
+        print("test_check_intercom_ip_none passed successfully.")
+
 if __name__ == '__main__':
     unittest.main()
