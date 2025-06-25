@@ -51,8 +51,8 @@ def get_user_query(response, conversation_id):
     # Get and join the latest user messages from the conversation parts
     joined_text = extract_latest_user_messages(result)
     if not joined_text:
-        return jsonify({"info": "No entries made by user found."}), 204
-    return joined_text
+        return "No entries made by user found.", 204
+    return joined_text, result.status_code
 
 # Extract conversation parts into a simplified JSON format
 def extract_conversation_parts(response):
