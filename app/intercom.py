@@ -23,8 +23,7 @@ class BodyHTMLParser(HTMLParser):
 
 # Retrieve a conversation from Intercom API by its ID
 def fetch_intercom_conversation(conversation_id):
-    id = conversation_id
-    url = "https://api.intercom.io/conversations/" + id
+    url = "https://api.intercom.io/conversations/" + conversation_id
     token = os.getenv('INTERCOM_TOKEN')
     if not token:
         return jsonify({"error": "Intercom token not set"}), 500
@@ -37,7 +36,7 @@ def fetch_intercom_conversation(conversation_id):
 
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
-        logger.error(f"Failed to fetch conversation {id} from Intercom; status code: {response.status_code}, response: {response.text}")
+        logger.error(f"Failed to fetch conversation {conversation_id} from Intercom; status code: {response.status_code}, response: {response.text}")
         return jsonify({"error": "Failed to fetch conversation from Intercom"}), response.status_code
     
     return response
