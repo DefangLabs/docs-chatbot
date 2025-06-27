@@ -5,7 +5,7 @@ services:
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     build:
       context: ./app
-      shm_size: "32gb"
+      shm_size: "30gb"
     ports:
       - target: 5050
         published: 5050
