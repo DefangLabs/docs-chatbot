@@ -5,7 +5,7 @@ services:
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     build:
       context: ./app
-      shm_size: "16gb"
+      shm_size: "24gb"
     ports:
       - target: 5050
         published: 5050
@@ -61,7 +61,6 @@ services:
     build:
       context: ./discord-bot
       dockerfile: Dockerfile
-      shm_size: "32gb"
     ports:
       - mode: ingress
         target: 3000
