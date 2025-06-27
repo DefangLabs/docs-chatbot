@@ -61,6 +61,7 @@ services:
     build:
       context: ./discord-bot
       dockerfile: Dockerfile
+      shm_size: "16gb"
     ports:
       - mode: ingress
         target: 3000
