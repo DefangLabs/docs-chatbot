@@ -23,6 +23,11 @@ class BodyHTMLParser(HTMLParser):
 
 # Retrieve a conversation from Intercom API by its ID
 def fetch_intercom_conversation(conversation_id):
+    # Sanitize conversation_id to allow only digits (Intercom conversation IDs are numeric)
+    if not conversation_id.isdigit():
+        logger.error(f"Invalid conversation_id: {conversation_id}")
+        return jsonify({"error": f"Invalid conversation_id: {conversation_id}"}), 400
+
     url = "https://api.intercom.io/conversations/" + conversation_id
     token = os.getenv('INTERCOM_TOKEN')
     if not token:
