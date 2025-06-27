@@ -39,7 +39,7 @@ def fetch_intercom_conversation(conversation_id):
         logger.error(f"Failed to fetch conversation {conversation_id} from Intercom; status code: {response.status_code}, response: {response.text}")
         return jsonify({"error": "Failed to fetch conversation from Intercom"}), response.status_code
     
-    return response
+    return response, response.status_code
 
 # Determines the user query from the Intercom conversation response
 def get_user_query(response, conversation_id):
@@ -156,14 +156,12 @@ def post_intercom_reply(conversation_id, response_text):
 def answer_intercom_conversation(conversation_id):
     logger.info(f"Received request to get conversation {conversation_id}")
     # Retrieves the history of the conversation thread in Intercom
-    conversation = fetch_intercom_conversation(conversation_id)
-    # If a tuple is returned, it is an error response
-    if isinstance(conversation, tuple):
-        return conversation
+    conversation, status_code = fetch_intercom_conversation(conversation_id)
+    if status_code != 200:
+        return jsonify(conversation), status_code
 
     # Extracts the user query (which are latest user messages joined into a single string) from conversation history
     user_query, status_code = get_user_query(conversation, conversation_id)
-    # If a tuple is returned, it is an error response
     if status_code != 200:
         return jsonify(user_query), status_code
 
