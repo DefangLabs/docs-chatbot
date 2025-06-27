@@ -6,8 +6,18 @@ import subprocess
 import os
 import segment.analytics as analytics
 import uuid
-import sys
-import traceback
+
+from werkzeug.test import EnvironBuilder
+from werkzeug.wrappers import Request
+
+import logging
+import redis
+from intercom import parse_html_to_text, set_conversation_human_replied, is_conversation_human_replied, answer_intercom_conversation, check_intercom_ip
+from utils import generate
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
 
@@ -18,6 +28,9 @@ app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
 
 csrf = CSRFProtect(app)
 
+# Initialize Redis connection
+r = redis.from_url(os.getenv('REDIS_URL'), decode_responses=True)
+
 def validate_pow(nonce, data, difficulty):
     # Calculate the sha256 of the concatenated string of 32-bit X-Nonce header and raw body.
     # This calculation has to match the code on the client side, in index.html.
@@ -25,6 +38,8 @@ def validate_pow(nonce, data, difficulty):
     calculated_hash = hashlib.sha256(nonce_bytes + data).digest()
     first_uint32 = int.from_bytes(calculated_hash[:4], byteorder='big')
     return first_uint32 <= difficulty
+
+
 
 def handle_ask_request(request, session):
     data = request.get_json()
@@ -37,33 +52,13 @@ def handle_ask_request(request, session):
     if 'anonymous_id' not in session:
         session['anonymous_id'] = str(uuid.uuid4())
     anonymous_id = session['anonymous_id']
+    
+    # Determine the source based on the user agent
+    user_agent = request.headers.get('User-Agent', '')
+    source = 'Ask Defang Discord Bot' if 'Discord Bot' in user_agent else 'Ask Defang Website'
 
-    def generate():
-        full_response = ""
-        try:
-            for token in rag_system.answer_query_stream(query):
-                yield token
-                full_response += token
-        except Exception as e:
-            print(f"Error in /ask endpoint: {e}", file=sys.stderr)
-            traceback.print_exc()
-            yield "Internal Server Error"
-
-        if not full_response:
-            full_response = "No response generated"
-
-        if analytics.write_key:
-            # Determine the source based on the user agent
-            user_agent = request.headers.get('User-Agent', '')
-            source = 'Ask Defang Discord Bot' if 'Discord Bot' in user_agent else 'Ask Defang Website'
-            # Track the query and response
-            analytics.track(
-                anonymous_id=anonymous_id,
-                event='Chatbot Question submitted',
-                properties={'query': query, 'response': full_response, 'source': source}
-            )
-
-    return Response(stream_with_context(generate()), content_type='text/markdown')
+    # Use the shared generate function directly
+    return Response(stream_with_context(generate(query, source, anonymous_id)), content_type='text/markdown')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -143,6 +138,53 @@ if os.getenv('DEBUG') == '1':
             return jsonify({"error": "Query is required"}), 400
         context = rag_system.get_context(query)
         return jsonify({"context": context})
+
+
+# Handle incoming webhooks from Intercom
+@app.route('/intercom-webhook', methods=['POST'])
+@csrf.exempt
+def handle_webhook():
+    if not check_intercom_ip(request):
+        return jsonify({"error": "Unauthorized IP"}), 403
+
+    data = request.json
+
+    logger.info(f"Received Intercom webhook: {data}")
+    conversation_id = data.get('data', {}).get('item', {}).get('id')
+
+    # Check for the type of the webhook event
+    topic = data.get('topic')
+    logger.info(f"Webhook topic: {topic}")
+    if topic == 'conversation.admin.replied':
+
+        # Check if the admin is a bot or human based on presence of a message marker (e.g., "🤖") in the last message
+        last_message = data.get('data', {}).get('item', {}).get('conversation_parts', {}).get('conversation_parts', [])[-1].get('body', '')
+        last_message_text = parse_html_to_text(last_message)
+
+        logger.info(f"Parsed last message text: {last_message_text}")
+        if last_message_text and last_message_text.endswith("🤖"):
+            # If the last message ends with the marker, it indicates a bot reply
+            logger.info(f"Last message in conversation {conversation_id} ends with the marker 🤖")
+            logger.info(f"Detected bot admin reply in conversation {conversation_id}; no action taken.")
+        else:
+            # If the last message does not end with the marker, it indicates a human reply
+            logger.info(f"Detected human admin reply in conversation {conversation_id}; marking as human admin-replied...")
+            # Mark the conversation as replied by a human admin to skip LLM responses in the future
+            set_conversation_human_replied(conversation_id, r)
+            logger.info(f"Successfully marked conversation {conversation_id} as human admin-replied.")
+    elif topic == 'conversation.user.replied':
+        # In this case, the webhook event is a user reply, not an admin reply
+        # Check if the conversation was replied previously by a human admin
+        if is_conversation_human_replied(conversation_id, r):
+            logger.info(f"Conversation {conversation_id} already marked as human admin-replied; no action taken.")
+            return 'OK'
+        # Fetch the conversation and generate an LLM answer for the user
+        logger.info(f"Detected a user reply in conversation {conversation_id}; fetching an answer from LLM...")
+        answer_intercom_conversation(conversation_id)
+    else:
+        logger.info(f"Received webhook for unsupported topic: {topic}; no action taken.")
+    return 'OK'
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)

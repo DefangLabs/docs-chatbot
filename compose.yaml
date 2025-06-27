@@ -22,6 +22,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
       OPENAI_BASE_URL: "http://llm/api/v1"
       MODEL: "anthropic.claude-3-haiku-20240307-v1:0"
+      INTERCOM_TOKEN:
+      INTERCOM_ADMIN_ID:
+      REDIS_URL: redis://redis:6379/0
     command: uwsgi --http 0.0.0.0:5050 --wsgi-file app.py --callable app --processes 4 --threads 2
     deploy:
       resources:
@@ -33,6 +36,14 @@ services:
       timeout: 10s
       retries: 5
       #start_period: 40s
+
+  redis:
+    image: redis:alpine
+    ports:
+      - target: 6379
+        published: 6379
+        protocol: tcp
+        mode: host
 
   llm:
     image: defangio/openai-access-gateway
