@@ -6,7 +6,6 @@ services:
     platform: linux/amd64
     build:
       context: ./app
-      shm_size: "30gb"
     ports:
       - target: 5050
         published: 5050
