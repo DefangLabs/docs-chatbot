@@ -82,7 +82,7 @@ def v1_ask():
         response = handle_ask_request(request, session)
         return response
     else:
-        jsonify({"error": "Invalid or missing Ask Token"}), 401
+        return jsonify({"error": "Invalid or missing Ask Token"}), 401
 
 @app.route('/trigger-rebuild', methods=['POST'])
 @csrf.exempt
