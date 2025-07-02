@@ -199,14 +199,17 @@ def parse_cli_markdown(file_path):
 
 def recursive_parse_directory(root_dir):
     """ Recursively parses all markdown files in the directory. """
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    paths = []
+    for dirpath, _dirnames, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename.lower().endswith('.md') or filename.lower().endswith('.mdx'):
-                file_path = os.path.join(dirpath, filename)
-                if 'cli' in dirpath.lower() or 'cli' in filename.lower():
-                    parse_cli_markdown(file_path)
-                else:
-                    parse_markdown_file_to_json(file_path)
+            lower_filename = filename.lower()
+            if lower_filename.endswith('.md') or lower_filename.endswith('.mdx'):
+                paths.append(os.path.join(dirpath, filename))
+    for file_path in paths:
+        if 'cli' in dirpath.lower() or 'cli' in filename.lower():
+            parse_cli_markdown(file_path)
+        else:
+            parse_markdown_file_to_json(file_path)
 
 if __name__ == "__main__":
     setup_repositories()
