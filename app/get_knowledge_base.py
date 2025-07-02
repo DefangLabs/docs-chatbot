@@ -85,16 +85,8 @@ def reset_knowledge_base():
     with open(kb_file_path, 'w') as output_file:
         json.dump([], output_file)
 
-def parse_markdown_file_to_json(current_id, file_path):
+def parse_markdown_file_to_json(json_output, current_id, file_path):
     """ Parses individual markdown file and adds its content to JSON """
-    try:
-        # Load existing content if the file exists
-        with open(kb_file_path, 'r') as existing_file:
-            json_output = json.load(existing_file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is empty, start fresh
-        json_output = []
-
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
 
@@ -146,24 +138,12 @@ def parse_markdown_file_to_json(current_id, file_path):
                 "path": adjust_knowledge_base_entry_path(file_path)  # Adjust path format
             })
 
-    # Write the augmented JSON output to ./data/knowledge_base.json
-    with open(kb_file_path, 'w', encoding='utf-8') as output_file:
-        json.dump(json_output, output_file, indent=2, ensure_ascii=False)
-
 def adjust_knowledge_base_entry_path(file_path):
     """ Adjusts the file path format for storage. """
     return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", ""))
 
-def parse_cli_markdown(current_id, file_path):
+def parse_cli_markdown(json_output, current_id, file_path):
     """ Parses CLI-specific markdown files """
-    try:
-        # Load existing content if the file exists
-        with open(kb_file_path, 'r') as existing_file:
-            json_output = json.load(existing_file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is empty, start fresh
-        json_output = []
-
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
 
@@ -187,10 +167,6 @@ def parse_cli_markdown(current_id, file_path):
             "path": file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
         })
 
-    # Write the augmented JSON output to data/knowledge_base.json
-    with open(kb_file_path, 'w', encoding='utf-8') as output_file:
-        json.dump(json_output, output_file, indent=2, ensure_ascii=False)
-
 def recursive_parse_directory(root_dir):
     """ Recursively parses all markdown files in the directory. """
     paths = []
@@ -199,11 +175,18 @@ def recursive_parse_directory(root_dir):
             lower_filename = filename.lower()
             if lower_filename.endswith('.md') or lower_filename.endswith('.mdx'):
                 paths.append(os.path.join(dirpath, filename))
+
+    with open(kb_file_path, 'r') as kb_file:
+        kb_data = json.load(kb_file)
+
     for id, file_path in enumerate(paths, start=1):
         if 'cli' in dirpath.lower() or 'cli' in filename.lower():
-            parse_cli_markdown(id, file_path)
+            parse_cli_markdown(kb_data, id, file_path)
         else:
-            parse_markdown_file_to_json(id, file_path)
+            parse_markdown_file_to_json(kb_data, id, file_path)
+
+    with open(kb_file_path, 'w') as kb_file:
+        json.dump(kb_data, kb_file, indent=2)
 
 if __name__ == "__main__":
     setup_repositories()
