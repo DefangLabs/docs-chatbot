@@ -27,21 +27,15 @@ def setup_repositories():
         "defang": "https://github.com/DefangLabs/defang.git"
     }
 
-    # Change to the temporary directory
-    original_dir = os.getcwd()
-    os.chdir(tmp_dir)
-
     # Clone each repository
     for repo_name, repo_url in repos.items():
-        clone_repository(repo_url, repo_name)
-
-    # Return to the original directory
-    os.chdir(original_dir)
+        clone_repository(repo_url, os.path.join(tmp_dir, repo_name))
 
 def run_prebuild_script():
     """ Run the 'prebuild.sh' script located in the .tmp directory. """
     os.chdir(".tmp")
     script_path = os.path.join("./", "prebuild.sh")  # Ensure the path is correct
+    os.chdir("..")
     if os.path.exists(script_path):
         print("Running prebuild.sh...")
         try:
@@ -172,8 +166,5 @@ def recursive_parse_directory(root_dir):
 if __name__ == "__main__":
     setup_repositories()
     run_prebuild_script()
-    os.chdir('../../')
-    print(os.listdir('.'))
     parse_markdown()  # Start parsing logic after all setups
-    print(os.listdir('.'))
     print("All processes completed successfully.")
