@@ -32,18 +32,21 @@ def setup_repositories():
         clone_repository(repo_url, os.path.join(tmp_dir, repo_name))
 
 def run_prebuild_script():
-    """ Run the 'prebuild.sh' script located in the .tmp directory. """
-    os.chdir(".tmp")
-    script_path = os.path.join("./", "prebuild.sh")  # Ensure the path is correct
-    os.chdir("..")
-    if os.path.exists(script_path):
-        print("Running prebuild.sh...")
-        try:
-            subprocess.run(["bash", script_path], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error running prebuild.sh: {e}")
-    else:
-        print("prebuild.sh not found.")
+    """ Run the defang-docs repo prebuild script"""
+
+    subprocess.run(
+        ["npm", "-C", ".tmp/defang-docs", "install"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    subprocess.run(
+        ["npm", "-C", ".tmp/defang-docs", "run", "prebuild"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
 
 def parse_markdown():
     """ Parse markdown files in the current directory into JSON """
