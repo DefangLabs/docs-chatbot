@@ -35,7 +35,8 @@ def setup_repositories():
     # Define repositories and their URLs
     repos = {
         "defang-docs": "https://github.com/DefangLabs/defang-docs.git",
-        "defang": "https://github.com/DefangLabs/defang.git"
+        "defang": "https://github.com/DefangLabs/defang.git",
+        "samples": "https://github.com/DefangLabs/samples.git"
     }
 
     # Change to the temporary directory
