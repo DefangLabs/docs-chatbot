@@ -7,16 +7,6 @@ from git import Repo
 
 kb_file_path = './data/knowledge_base.json'
 
-def clean_tmp(dir_path):
-    """ Clears out all contents of the specified directory except for prebuild.sh """
-    for item in os.listdir(dir_path):
-        item_path = os.path.join(dir_path, item)
-        if item != "prebuild.sh":  # Keep prebuild.sh
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            else:
-                os.remove(item_path)
-
 def clone_repository(repo_url, local_dir):
     """ Clone or pull the repository based on its existence. """
     if not os.path.exists(local_dir):
@@ -30,7 +20,6 @@ def clone_repository(repo_url, local_dir):
 def setup_repositories():
     tmp_dir = ".tmp"
     os.makedirs(tmp_dir, exist_ok=True)
-    clean_tmp(tmp_dir)  # Clean the temporary directory before setting up
 
     # Define repositories and their URLs
     repos = {
@@ -39,65 +28,34 @@ def setup_repositories():
         "samples": "https://github.com/DefangLabs/samples.git"
     }
 
-    # Change to the temporary directory
-    original_dir = os.getcwd()
-    os.chdir(tmp_dir)
-
     # Clone each repository
     for repo_name, repo_url in repos.items():
-        clone_repository(repo_url, repo_name)
-
-    # Return to the original directory
-    os.chdir(original_dir)
+        clone_repository(repo_url, os.path.join(tmp_dir, repo_name))
 
 def run_prebuild_script():
-    """ Run the 'prebuild.sh' script located in the .tmp directory. """
-    os.chdir(".tmp")
-    script_path = os.path.join("./", "prebuild.sh")  # Ensure the path is correct
-    if os.path.exists(script_path):
-        print("Running prebuild.sh...")
-        try:
-            subprocess.run(["bash", script_path], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error running prebuild.sh: {e}")
-    else:
-        print("prebuild.sh not found.")
+    """ Run the defang-docs repo prebuild script"""
 
-def cleanup():
-    """ Clean up unneeded files, preserving only 'docs' and 'blog' directories """
-    os.chdir("./defang-docs")
-    for item in os.listdir('.'):
-        if item not in ['docs', 'blog']:  # Check if the item is not one of the directories to keep
-            item_path = os.path.join('.', item)  # Construct the full path
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)  # Remove the directory and all its contents
-            else:
-                os.remove(item_path)  # Remove the file
-    print("Cleanup completed successfully.")
+    subprocess.run(
+        ["npm", "-C", ".tmp/defang-docs", "install"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    subprocess.run(
+        ["npm", "-C", ".tmp/defang-docs", "run", "prebuild"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
 
 def parse_markdown():
     """ Parse markdown files in the current directory into JSON """
-    reset_knowledge_base()  # Reset the JSON database file
     recursive_parse_directory('./.tmp/defang-docs')  # Parse markdown files in the current directory
     print("Markdown parsing completed successfully.")
 
-def reset_knowledge_base():
-    """ Resets or initializes the knowledge base JSON file. """
-    with open(kb_file_path, 'w') as output_file:
-        json.dump([], output_file)
-
-def parse_markdown_file_to_json(file_path):
+def parse_markdown_file_to_json(json_output, current_id, file_path):
     """ Parses individual markdown file and adds its content to JSON """
-    try:
-        # Load existing content if the file exists
-        with open(kb_file_path, 'r') as existing_file:
-            json_output = json.load(existing_file)
-            current_id = len(json_output) + 1  # Start ID from the next available number
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is empty, start fresh
-        json_output = []
-        current_id = 1
-
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
 
@@ -148,28 +106,17 @@ def parse_markdown_file_to_json(file_path):
                 "text": text,
                 "path": adjust_knowledge_base_entry_path(file_path)  # Adjust path format
             })
-            current_id += 1
-
-    # Write the augmented JSON output to ./data/knowledge_base.json
-    with open(kb_file_path, 'w', encoding='utf-8') as output_file:
-        json.dump(json_output, output_file, indent=2, ensure_ascii=False)
 
 def adjust_knowledge_base_entry_path(file_path):
     """ Adjusts the file path format for storage. """
-    return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", ""))
+    return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', normalize_docs_path(file_path))
 
-def parse_cli_markdown(file_path):
+def normalize_docs_path(path):
+    """ Normalizes the file path to ensure consistent formatting. """
+    return path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
+
+def parse_cli_markdown(json_output, current_id, file_path):
     """ Parses CLI-specific markdown files """
-    try:
-        # Load existing content if the file exists
-        with open(kb_file_path, 'r') as existing_file:
-            json_output = json.load(existing_file)
-            current_id = len(json_output) + 1  # Start ID from the next available number
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is empty, start fresh
-        json_output = []
-        current_id = 1
-
     with open(file_path, 'r', encoding='utf-8') as file:
         lines = file.readlines()
 
@@ -190,32 +137,32 @@ def parse_cli_markdown(file_path):
             "id": current_id,
             "about": about,
             "text": text,
-            "path": file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
+            "path": normalize_docs_path(file_path)
         })
-        current_id += 1
-
-    # Write the augmented JSON output to data/knowledge_base.json
-    with open(kb_file_path, 'w', encoding='utf-8') as output_file:
-        json.dump(json_output, output_file, indent=2, ensure_ascii=False)
 
 def recursive_parse_directory(root_dir):
     """ Recursively parses all markdown files in the directory. """
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    paths = []
+    for dirpath, _dirnames, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename.lower().endswith('.md') or filename.lower().endswith('.mdx'):
-                file_path = os.path.join(dirpath, filename)
-                if 'cli' in dirpath.lower() or 'cli' in filename.lower():
-                    parse_cli_markdown(file_path)
-                else:
-                    parse_markdown_file_to_json(file_path)
+            lower_filename = filename.lower()
+            if lower_filename.endswith('.md') or lower_filename.endswith('.mdx'):
+                paths.append(os.path.join(dirpath, filename))
+
+    with open(kb_file_path, 'r') as kb_file:
+        kb_data = json.load(kb_file)
+
+    for id, file_path in enumerate(paths, start=1):
+        if 'cli' in dirpath.lower() or 'cli' in filename.lower():
+            parse_cli_markdown(kb_data, id, file_path)
+        else:
+            parse_markdown_file_to_json(kb_data, id, file_path)
+
+    with open(kb_file_path, 'w') as kb_file:
+        json.dump(kb_data, kb_file, indent=2)
 
 if __name__ == "__main__":
     setup_repositories()
     run_prebuild_script()
-    cleanup()
-    os.chdir('../../')
-    print(os.listdir('.'))
     parse_markdown()  # Start parsing logic after all setups
-    print(os.listdir('.'))
-    clean_tmp('./.tmp')
     print("All processes completed successfully.")
