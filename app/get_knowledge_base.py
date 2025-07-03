@@ -50,14 +50,8 @@ def run_prebuild_script():
 
 def parse_markdown():
     """ Parse markdown files in the current directory into JSON """
-    reset_knowledge_base()  # Reset the JSON database file
     recursive_parse_directory('./.tmp/defang-docs')  # Parse markdown files in the current directory
     print("Markdown parsing completed successfully.")
-
-def reset_knowledge_base():
-    """ Resets or initializes the knowledge base JSON file. """
-    with open(kb_file_path, 'w') as output_file:
-        json.dump([], output_file)
 
 def parse_markdown_file_to_json(json_output, current_id, file_path):
     """ Parses individual markdown file and adds its content to JSON """
