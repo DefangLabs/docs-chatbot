@@ -7,16 +7,6 @@ from git import Repo
 
 kb_file_path = './data/knowledge_base.json'
 
-def clean_tmp(dir_path):
-    """ Clears out all contents of the specified directory except for prebuild.sh """
-    for item in os.listdir(dir_path):
-        item_path = os.path.join(dir_path, item)
-        if item != "prebuild.sh":  # Keep prebuild.sh
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            else:
-                os.remove(item_path)
-
 def clone_repository(repo_url, local_dir):
     """ Clone or pull the repository based on its existence. """
     if not os.path.exists(local_dir):
@@ -30,7 +20,6 @@ def clone_repository(repo_url, local_dir):
 def setup_repositories():
     tmp_dir = ".tmp"
     os.makedirs(tmp_dir, exist_ok=True)
-    clean_tmp(tmp_dir)  # Clean the temporary directory before setting up
 
     # Define repositories and their URLs
     repos = {
@@ -61,18 +50,6 @@ def run_prebuild_script():
             print(f"Error running prebuild.sh: {e}")
     else:
         print("prebuild.sh not found.")
-
-def cleanup():
-    """ Clean up unneeded files, preserving only 'docs' and 'blog' directories """
-    os.chdir("./defang-docs")
-    for item in os.listdir('.'):
-        if item not in ['docs', 'blog']:  # Check if the item is not one of the directories to keep
-            item_path = os.path.join('.', item)  # Construct the full path
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)  # Remove the directory and all its contents
-            else:
-                os.remove(item_path)  # Remove the file
-    print("Cleanup completed successfully.")
 
 def parse_markdown():
     """ Parse markdown files in the current directory into JSON """
@@ -195,10 +172,8 @@ def recursive_parse_directory(root_dir):
 if __name__ == "__main__":
     setup_repositories()
     run_prebuild_script()
-    cleanup()
     os.chdir('../../')
     print(os.listdir('.'))
     parse_markdown()  # Start parsing logic after all setups
     print(os.listdir('.'))
-    clean_tmp('./.tmp')
     print("All processes completed successfully.")
