@@ -140,7 +140,11 @@ def parse_markdown_file_to_json(json_output, current_id, file_path):
 
 def adjust_knowledge_base_entry_path(file_path):
     """ Adjusts the file path format for storage. """
-    return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", ""))
+    return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', normalize_docs_path(file_path))
+
+def normalize_docs_path(path):
+    """ Normalizes the file path to ensure consistent formatting. """
+    return path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
 
 def parse_cli_markdown(json_output, current_id, file_path):
     """ Parses CLI-specific markdown files """
@@ -164,7 +168,7 @@ def parse_cli_markdown(json_output, current_id, file_path):
             "id": current_id,
             "about": about,
             "text": text,
-            "path": file_path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
+            "path": normalize_docs_path(file_path)
         })
 
 def recursive_parse_directory(root_dir):
