@@ -5,7 +5,6 @@ description = ""
 authors = [
     {name = "Defang Devs",email = "devs@defang.io"}
 ]
-readme = "README.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "flask (==2.0.1)",

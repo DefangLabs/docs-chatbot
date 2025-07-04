@@ -25,13 +25,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get install -y nodejs
 
 # Install uWSGI and GitPython
-RUN pip install uwsgi gitpython
+RUN pip install --no-cache-dir poetry uwsgi gitpython
 
-# Copy the requirements file first to leverage Docker's cache
-COPY requirements.txt /app/
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy poetry files
+COPY pyproject.toml poetry.lock* ./
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi --no-root
 
 # Copy the application source code into the container
 COPY . /app
