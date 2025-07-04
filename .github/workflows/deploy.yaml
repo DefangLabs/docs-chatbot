@@ -18,6 +18,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Install poetry
+        run: pipx install poetry
+
       - name: Checkout Repo
         uses: actions/checkout@v4
 
@@ -35,15 +39,15 @@ jobs:
           role-duration-seconds: 1200
           role-to-assume: arn:aws:iam::407839483216:role/admin
 
-      - name: Set up cache for pip dependencies
+      - name: Set up cache for Poetry dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('app/requirements.txt') }}
+          path: ~/.cache/pypoetry
+          key: poetry-${{ hashFiles('app/poetry.lock') }}
 
-      - name: Install Python dependencies
+      - name: Install Python dependencies with Poetry
         working-directory: ./app
-        run: pip install -r requirements.txt
+        run: poetry install --no-interaction --no-root
 
       - name: Update knowledge_base.json
         working-directory: ./app
