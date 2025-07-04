@@ -49,7 +49,7 @@ services:
         target: /root/.aws
 
   discord-bot:
-    restart: unless-stopped
+    restart: "no"
     extends:
       file: compose.yaml
       service: discord-bot
