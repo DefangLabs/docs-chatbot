@@ -37,9 +37,6 @@ COPY . /app
 # Expose port 5050 for the Flask application
 EXPOSE 5050
 
-# Run test file
-RUN python test_intercom.py
-
 # Define environment variable for Flask
 ENV FLASK_APP=app.py
 
