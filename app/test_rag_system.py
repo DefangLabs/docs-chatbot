@@ -53,8 +53,7 @@ class TestRAGSystem(unittest.TestCase):
     def test_retrieve_fallback(self):
         # test a query that should return the fallback response
         query = "Hello"
-        # set use_cpu to True, as testing has no GPU calculations
-        result = self.rag_system.retrieve(query, use_cpu=True)
+        result = self.rag_system.retrieve(query)
         self.assertIsInstance(result, list)
         self.assertGreater(len(result), 0)
         self.assertEqual(len(result), 1)  # should return one result for fallback
@@ -67,8 +66,7 @@ class TestRAGSystem(unittest.TestCase):
     def test_retrieve_actual_response(self):
         # test a query that should return an actual response from the knowledge base
         query = "What is Defang?"
-        # set use_cpu to True, as testing has no GPU calculations
-        result = self.rag_system.retrieve(query, use_cpu=True)
+        result = self.rag_system.retrieve(query)
         self.assertIsInstance(result, list)
         self.assertGreater(len(result), 0)
         self.assertLessEqual(len(result), 5)  # should return up to max_docs (5)
@@ -80,9 +78,8 @@ class TestRAGSystem(unittest.TestCase):
 
     def test_compute_document_scores(self):
         query = "Does Defang have an MCP sample?"
-        # get embeddings and move them to CPU, as testing has no GPU calculations
-        query_embedding = self.rag_system.get_query_embedding(query, use_cpu=True)
-        doc_embeddings = self.rag_system.get_doc_embeddings(use_cpu=True)
+        query_embedding = self.rag_system.get_query_embedding(query)
+        doc_embeddings = self.rag_system.get_doc_embeddings()
 
         # call function and get results
         result = self.rag_system.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold=0.8)
