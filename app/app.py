@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, Response, stream_with_context, session, send_from_directory
 from flask_wtf.csrf import CSRFProtect
-from rag_system import rag_system
+from rag_system import RAGSystem
 import hashlib
 import subprocess
 import os
@@ -25,6 +25,8 @@ app = Flask(__name__, static_folder='templates/static')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = bool(os.getenv('SESSION_COOKIE_SECURE'))
+
+app.rag_system = RAGSystem()
 
 csrf = CSRFProtect(app)
 
@@ -52,13 +54,13 @@ def handle_ask_request(request, session):
     if 'anonymous_id' not in session:
         session['anonymous_id'] = str(uuid.uuid4())
     anonymous_id = session['anonymous_id']
-    
+
     # Determine the source based on the user agent
     user_agent = request.headers.get('User-Agent', '')
     source = 'Ask Defang Discord Bot' if 'Discord Bot' in user_agent else 'Ask Defang Website'
 
     # Use the shared generate function directly
-    return Response(stream_with_context(generate(query, source, anonymous_id)), content_type='text/markdown')
+    return Response(stream_with_context(generate(app.rag_system, query, source, anonymous_id)), content_type='text/markdown')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -110,7 +112,7 @@ def trigger_rebuild():
 
         print("Rebuilding embeddings...")
         try:
-            rag_system.rebuild_embeddings()
+            app.rag_system.rebuild_embeddings()
         except Exception as e:
             print(f"Error rebuilding embeddings: {str(e)}")
             return jsonify({"error": "Error rebuilding embeddings", "details": str(e)}), 500
@@ -136,7 +138,7 @@ if os.getenv('DEBUG') == '1':
         query = data.get('query', '')
         if not query:
             return jsonify({"error": "Query is required"}), 400
-        context = rag_system.get_context(query)
+        context = app.rag_system.get_context(query)
         return jsonify({"context": context})
 
 
@@ -180,7 +182,7 @@ def handle_webhook():
             return 'OK'
         # Fetch the conversation and generate an LLM answer for the user
         logger.info(f"Detected a user reply in conversation {conversation_id}; fetching an answer from LLM...")
-        answer_intercom_conversation(conversation_id)
+        answer_intercom_conversation(app.rag_system, conversation_id)
     else:
         logger.info(f"Received webhook for unsupported topic: {topic}; no action taken.")
     return 'OK'
