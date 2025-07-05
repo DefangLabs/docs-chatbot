@@ -3,3 +3,4 @@ __pycache__
 sentence-transformers
 .tmp/
 node_modules
+venv
