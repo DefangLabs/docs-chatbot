@@ -3,9 +3,10 @@ services:
     restart: always
     domainname: ask.defang.io
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
+    platform: linux/amd64
     build:
       context: ./app
-      shm_size: "30gb"
+      dockerfile: Dockerfile
     ports:
       - target: 5050
         published: 5050
