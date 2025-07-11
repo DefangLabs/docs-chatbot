@@ -1,7 +1,6 @@
 .env
 __pycache__
 sentence-transformers
-.tmp/*
-!.tmp/prebuild.sh
+.tmp/
 node_modules
 venv

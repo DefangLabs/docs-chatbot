@@ -36,9 +36,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application source code into the container
 COPY . /app
 
-# Make the prebuild.sh script executable
-RUN chmod +x .tmp/prebuild.sh
-
 # Expose port 5050 for the Flask application
 EXPOSE 5050
 

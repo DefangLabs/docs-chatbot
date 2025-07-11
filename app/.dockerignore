@@ -1,6 +1,7 @@
 myenv
+venv
 .direnv
 .envrc
 __pycache__
-venv
 sentence-transformers
+.tmp
