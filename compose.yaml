@@ -1,11 +1,12 @@
 services:
   app:
     restart: always
-    domainname: ask.defang.io
+    # domainname: ask.defang.io
     x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
+    platform: linux/amd64
     build:
       context: ./app
-      shm_size: "30gb"
+      dockerfile: Dockerfile
     ports:
       - target: 5050
         published: 5050
@@ -21,10 +22,11 @@ services:
       SESSION_COOKIE_SECURE: 1
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
       OPENAI_BASE_URL: "http://llm/api/v1"
-      MODEL: "anthropic.claude-3-haiku-20240307-v1:0"
+      MODEL: "ai/claude3-haiku"
       INTERCOM_TOKEN:
       INTERCOM_ADMIN_ID:
       REDIS_URL: redis://redis:6379/0
+      SENTENCE_TRANSFORMERS_HOME: /app/sentence-transformers
     deploy:
       resources:
         reservations:

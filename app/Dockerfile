@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Go for ARM architecture (latest supported version 1.21)
-RUN curl -OL https://golang.org/dl/go1.21.1.linux-arm64.tar.gz && \
-    tar -C /usr/local -xzf go1.21.1.linux-arm64.tar.gz && \
-    rm go1.21.1.linux-arm64.tar.gz
+# Install Go for x86 architecture (latest supported version 1.21)
+RUN curl -OL https://golang.org/dl/go1.21.1.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.21.1.linux-amd64.tar.gz && \
+    rm go1.21.1.linux-amd64.tar.gz
 
 # Set Go environment variables
 ENV PATH="/usr/local/go/bin:${PATH}"
@@ -42,11 +42,11 @@ RUN chmod +x .tmp/prebuild.sh
 # Expose port 5050 for the Flask application
 EXPOSE 5050
 
-# Run test file
-RUN python test_intercom.py
+# # Run test file
+# RUN python test_intercom.py
 
 # Define environment variable for Flask
 ENV FLASK_APP=app.py
 
 # Run the application using uWSGI
-CMD ["uwsgi", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]
+CMD ["uwsgi", "--lazy-apps", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]

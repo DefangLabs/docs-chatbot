@@ -30,17 +30,14 @@ class RAGSystem:
     def normalize_query(self, query):
         return query.lower().strip()
 
-    def get_query_embedding(self, query, use_cpu=True):
+    def get_query_embedding(self, query):
         normalized_query = self.normalize_query(query)
         query_embedding = self.model.encode([normalized_query], convert_to_tensor=True)
-        if use_cpu:
-            query_embedding = query_embedding.cpu()
+        query_embedding = query_embedding.cpu()
         return query_embedding
 
-    def get_doc_embeddings(self, use_cpu=True):
-        if use_cpu:
-            return self.doc_embeddings.cpu()
-        return self.doc_embeddings
+    def get_doc_embeddings(self):
+        return self.doc_embeddings.cpu()
 
     def compute_document_scores(self, query_embedding, doc_embeddings, high_match_threshold):
         text_similarities = cosine_similarity(query_embedding, doc_embeddings)[0]
@@ -66,12 +63,9 @@ class RAGSystem:
 
         return result
 
-    def retrieve(self, query, similarity_threshold=0.4, high_match_threshold=0.8, max_docs=5, use_cpu=True):
-        # Note: Set use_cpu=True to run on CPU, which is useful for testing or environments without a GPU.
-        # Set use_cpu=False to leverage GPU for better performance in production.
-
-        query_embedding = self.get_query_embedding(query, use_cpu)
-        doc_embeddings = self.get_doc_embeddings(use_cpu)
+    def retrieve(self, query, similarity_threshold=0.4, high_match_threshold=0.8, max_docs=5):
+        query_embedding = self.get_query_embedding(query)
+        doc_embeddings = self.get_doc_embeddings()
 
         doc_scores = self.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold)
         retrieved_docs = self.get_top_docs(doc_scores, similarity_threshold, max_docs)
@@ -149,11 +143,11 @@ class RAGSystem:
 
             collected_messages = []
             for chunk in stream:
-                if chunk['choices'][0]['finish_reason'] is not None:
-                    break
                 content = chunk['choices'][0]['delta'].get('content', '')
                 collected_messages.append(content)
                 yield content
+                if chunk['choices'][0].get('finish_reason') is not None:
+                    break
 
             if len(citations) > 0:
                 yield "\n\nReferences:\n" + "\n".join(citations)
@@ -193,3 +187,6 @@ class RAGSystem:
         for doc in retrieved_docs:
             retrieved_text.append(f"{doc['about']}. {doc['text']}")
         return "\n\n".join(retrieved_text)
+
+# # Instantiate the RAGSystem
+# rag_system = RAGSystem()

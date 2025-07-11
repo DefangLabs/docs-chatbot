@@ -4,3 +4,4 @@ sentence-transformers
 .tmp/*
 !.tmp/prebuild.sh
 node_modules
+venv
