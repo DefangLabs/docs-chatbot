@@ -19,5 +19,5 @@ jobs:
         working-directory: ./app
         run: |
           docker buildx build \
-            --platform linux/amd64,linux/arm64 \
+            --platform linux/amd64 \
             .
