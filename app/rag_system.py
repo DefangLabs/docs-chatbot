@@ -142,7 +142,7 @@ class RAGSystem:
             )
 
             collected_messages = []
-            for chunk in stream:  
+            for chunk in stream:
                 content = chunk['choices'][0]['delta'].get('content', '')
                 collected_messages.append(content)
                 yield content
