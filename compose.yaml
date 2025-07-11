@@ -6,6 +6,7 @@ services:
     platform: linux/amd64
     build:
       context: ./app
+      dockerfile: Dockerfile
     ports:
       - target: 5050
         published: 5050
