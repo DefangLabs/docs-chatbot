@@ -46,4 +46,4 @@ RUN python test_intercom.py
 ENV FLASK_APP=app.py
 
 # Run the application using uWSGI
-CMD ["uwsgi", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]
+CMD ["uwsgi", "--lazy-apps", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]

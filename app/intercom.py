@@ -43,7 +43,7 @@ def fetch_intercom_conversation(conversation_id):
     if response.status_code != 200:
         logger.error(f"Failed to fetch conversation {conversation_id} from Intercom; status code: {response.status_code}, response: {response.text}")
         return jsonify({"error": "Failed to fetch conversation from Intercom"}), response.status_code
-    
+
     return response, response.status_code
 
 # Determines the user query from the Intercom conversation response
@@ -123,7 +123,7 @@ def set_conversation_human_replied(conversation_id, redis_client):
         logger.info(f"Added conversation_id {conversation_id} to Redis set admin_replied_conversations")
     except Exception as e:
         logger.error(f"Error adding conversation_id to Redis: {e}")
-    
+
 # Check if a conversation is already marked as replied by a human admin
 def is_conversation_human_replied(conversation_id, redis_client):
     try:
@@ -158,7 +158,7 @@ def post_intercom_reply(conversation_id, response_text):
 
 
 # Returns a generated LLM answer to the Intercom conversation based on previous user message history
-def answer_intercom_conversation(conversation_id):
+def answer_intercom_conversation(rag, conversation_id):
     logger.info(f"Received request to get conversation {conversation_id}")
     # Retrieves the history of the conversation thread in Intercom
     conversation, status_code = fetch_intercom_conversation(conversation_id)
@@ -174,9 +174,9 @@ def answer_intercom_conversation(conversation_id):
 
     # Use a deterministic, non-reversible hash for anonymous_id for Intercom conversations
     anon_hash = hashlib.sha256(f"intercom-{conversation_id}".encode()).hexdigest()
-    
+
     # Generate the exact response using the RAG system
-    llm_response = "".join(generate(user_query, 'Intercom Conversation', anon_hash))
+    llm_response = "".join(generate(rag, user_query, 'Intercom Conversation', anon_hash))
     llm_response = llm_response + " 🤖" # Add a marker to indicate the end of the response
 
     logger.info(f"LLM response: {llm_response}")
@@ -200,5 +200,5 @@ def check_intercom_ip(request):
     if remote_ip not in INTERCOM_ALLOWED_IPS:
         # logger.info(f"Rejected webhook from unauthorized IP: {remote_ip}")
         return False
-    
+
     return True

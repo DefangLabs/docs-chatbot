@@ -187,6 +187,3 @@ class RAGSystem:
         for doc in retrieved_docs:
             retrieved_text.append(f"{doc['about']}. {doc['text']}")
         return "\n\n".join(retrieved_text)
-
-# Instantiate the RAGSystem
-rag_system = RAGSystem()
