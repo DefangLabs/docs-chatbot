@@ -142,12 +142,12 @@ class RAGSystem:
             )
 
             collected_messages = []
-            for chunk in stream:
-                if chunk['choices'][0]['finish_reason'] is not None:
-                    break
+            for chunk in stream:  
                 content = chunk['choices'][0]['delta'].get('content', '')
                 collected_messages.append(content)
                 yield content
+                if chunk['choices'][0].get('finish_reason') is not None:
+                    break
 
             if len(citations) > 0:
                 yield "\n\nReferences:\n" + "\n".join(citations)
