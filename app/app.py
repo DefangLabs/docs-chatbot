@@ -180,9 +180,26 @@ def handle_webhook():
         if is_conversation_human_replied(conversation_id, r):
             logger.info(f"Conversation {conversation_id} already marked as human admin-replied; no action taken.")
             return 'OK'
+
+        # Check if the conversation is of type email
+        conversation_type = data.get('data', {}).get('item', {}).get('source', {}).get('type')
+        if conversation_type == 'email':
+            logger.info(f"Conversation {conversation_id} is of type email; no action taken.")
+            return 'OK'
+        
         # Fetch the conversation and generate an LLM answer for the user
         logger.info(f"Detected a user reply in conversation {conversation_id}; fetching an answer from LLM...")
         answer_intercom_conversation(app.rag_system, conversation_id)
+
+    elif topic == 'conversation.user.created':
+        # In this case, the webhook event is a new user conversation
+        # Check if the conversation is of type email
+        conversation_type = data.get('data', {}).get('item', {}).get('source', {}).get('type')
+        if conversation_type == 'email':
+            logger.info(f"New conversation {conversation_id} is of type email; no action taken.")
+        else:
+            logger.info(f"New conversation {conversation_id} is not of type email; generating an answer from LLM...")
+            answer_intercom_conversation(app.rag_system, conversation_id)
     else:
         logger.info(f"Received webhook for unsupported topic: {topic}; no action taken.")
     return 'OK'
