@@ -158,7 +158,7 @@ def handle_webhook():
     topic = data.get('topic')
     logger.info(f"Webhook topic: {topic}")
     if topic == 'conversation.admin.replied':
-
+        # In this case, the webhook event is an admin reply
         # Check if the admin is a bot or human based on presence of a message marker (e.g., "🤖") in the last message
         last_message = data.get('data', {}).get('item', {}).get('conversation_parts', {}).get('conversation_parts', [])[-1].get('body', '')
         last_message_text = parse_html_to_text(last_message)
@@ -174,15 +174,27 @@ def handle_webhook():
             # Mark the conversation as replied by a human admin to skip LLM responses in the future
             set_conversation_human_replied(conversation_id, r)
             logger.info(f"Successfully marked conversation {conversation_id} as human admin-replied.")
-    elif topic == 'conversation.user.replied':
-        # In this case, the webhook event is a user reply, not an admin reply
-        # Check if the conversation was replied previously by a human admin
-        if is_conversation_human_replied(conversation_id, r):
-            logger.info(f"Conversation {conversation_id} already marked as human admin-replied; no action taken.")
+
+    elif topic == 'conversation.user.replied' or topic == 'conversation.user.created':
+        # In this case, the webhook event is a user reply or a new user conversation
+        # Check if the conversation is of type email, and skip processing if so
+        conversation_type = data.get('data', {}).get('item', {}).get('source', {}).get('type')
+        if conversation_type == 'email':
+            logger.info(f"Conversation {conversation_id} is of type email; no action taken.")
             return 'OK'
+        
+        # Check if it is a user reply and do the admin-replied checks if so
+        # For new user conversations, we will skip admin-replied check to avoid false positives from Intercom auto-replies
+        if topic == 'conversation.user.replied':
+            # Check if the conversation was replied previously by a human admin and skip processing if so
+            if is_conversation_human_replied(conversation_id, r):
+                logger.info(f"Conversation {conversation_id} already marked as human admin-replied; no action taken.")
+                return 'OK'
+
         # Fetch the conversation and generate an LLM answer for the user
         logger.info(f"Detected a user reply in conversation {conversation_id}; fetching an answer from LLM...")
         answer_intercom_conversation(app.rag_system, conversation_id)
+
     else:
         logger.info(f"Received webhook for unsupported topic: {topic}; no action taken.")
     return 'OK'
