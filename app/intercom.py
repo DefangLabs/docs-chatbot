@@ -47,13 +47,19 @@ def fetch_intercom_conversation(conversation_id):
     return response, response.status_code
 
 # Determines the user query from the Intercom conversation response
-def get_user_query(response, conversation_id):
-    # Extract conversation parts from an Intercom request response
-    result = extract_conversation_parts(response)
-    logger.info(f"Extracted {len(result)} parts from conversation {conversation_id}")
+def get_user_query(response, conversation_id, topic):
+    joined_text = None
+    # Determine the user query based on the type of topic
+    if topic == 'conversation.user.replied':
+        # Extract conversation parts from an Intercom request response
+        result = extract_conversation_parts(response)
+        logger.info(f"Extracted {len(result)} parts from conversation {conversation_id}")
+        # Get and join only the latest user messages from the conversation parts
+        joined_text = extract_latest_user_messages(result)
+    elif topic == 'conversation.user.created':
+        # Extract the query directly from an Intercom request response
+        joined_text = extract_query_from_new_conversation(response)
 
-    # Get and join the latest user messages from the conversation parts
-    joined_text = extract_latest_user_messages(result)
     if not joined_text:
         return "No entries made by user found.", 204
     return joined_text, 200
@@ -71,6 +77,14 @@ def extract_conversation_parts(response):
         created_at = part.get('created_at')
         extracted_parts.append({'body': body, 'author': author, 'created_at': created_at})
     return extracted_parts
+
+# Extract the query (i.e. the first user message) from a new conversation in Intercom
+def extract_query_from_new_conversation(response):
+    data = response.json()
+    body = data.get('source', {}).get('body')
+    if body:
+        return parse_html_to_text(body)
+    return None
 
 # Joins the latest user entries in the conversation starting from the last non-user (i.e. admin) entry
 def extract_latest_user_messages(conversation_parts):
@@ -158,7 +172,7 @@ def post_intercom_reply(conversation_id, response_text):
 
 
 # Returns a generated LLM answer to the Intercom conversation based on previous user message history
-def answer_intercom_conversation(rag, conversation_id):
+def answer_intercom_conversation(rag, conversation_id, topic):
     logger.info(f"Received request to get conversation {conversation_id}")
     # Retrieves the history of the conversation thread in Intercom
     conversation, status_code = fetch_intercom_conversation(conversation_id)
@@ -166,7 +180,7 @@ def answer_intercom_conversation(rag, conversation_id):
         return jsonify(conversation), status_code
 
     # Extracts the user query (which are latest user messages joined into a single string) from conversation history
-    user_query, status_code = get_user_query(conversation, conversation_id)
+    user_query, status_code = get_user_query(conversation, conversation_id, topic)
     if status_code != 200:
         return jsonify(user_query), status_code
 
