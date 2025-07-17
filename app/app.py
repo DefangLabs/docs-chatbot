@@ -193,7 +193,7 @@ def handle_webhook():
 
         # Fetch the conversation and generate an LLM answer for the user
         logger.info(f"Detected a user reply in conversation {conversation_id}; fetching an answer from LLM...")
-        answer_intercom_conversation(app.rag_system, conversation_id)
+        answer_intercom_conversation(app.rag_system, conversation_id, topic)
 
     else:
         logger.info(f"Received webhook for unsupported topic: {topic}; no action taken.")
