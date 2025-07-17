@@ -36,7 +36,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      #start_period: 40s
+      start_period: 240s
     depends_on:
       - redis
       - llm
