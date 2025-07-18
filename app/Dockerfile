@@ -34,7 +34,7 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set the environment variable for the sentence transformers model
-ENV SENTENCE_TRANSFORMERS_HOME="/app/sentence-transformers"
+ENV SENTENCE_TRANSFORMERS_HOME="/root/.cache/sentence_transformers"
 
 # Preload the sentence transformer model to cache
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
