@@ -36,8 +36,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Set the environment variable for the sentence transformers model
 ENV SENTENCE_TRANSFORMERS_HOME="/root/.cache/sentence_transformers"
 
+COPY ./embeddings.py /app/embeddings.py
+
 # Preload the sentence transformer model to cache
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+RUN python embeddings.py
 
 # Copy the application source code into the container
 COPY . /app
