@@ -34,10 +34,12 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set the environment variable for the sentence transformers model
-ENV SENTENCE_TRANSFORMERS_HOME="/app/sentence-transformers"
+ENV SENTENCE_TRANSFORMERS_HOME="/root/.cache/sentence_transformers"
+
+COPY ./embeddings.py /app/embeddings.py
 
 # Preload the sentence transformer model to cache
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+RUN python embeddings.py
 
 # Copy the application source code into the container
 COPY . /app
@@ -49,4 +51,4 @@ EXPOSE 5050
 ENV FLASK_APP=app.py
 
 # Run the application using uWSGI
-CMD ["uwsgi", "--lazy-apps", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]
+CMD ["uwsgi", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--threads", "2"]

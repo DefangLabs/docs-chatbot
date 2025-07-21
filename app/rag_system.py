@@ -6,6 +6,7 @@ from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from embeddings import load_model
 import traceback
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
@@ -15,7 +16,7 @@ class RAGSystem:
     def __init__(self, knowledge_base_path='./data/knowledge_base.json'):
         self.knowledge_base_path = knowledge_base_path
         self.knowledge_base = self.load_knowledge_base()
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.model = load_model()
         self.doc_embeddings = self.embed_knowledge_base()
         self.conversation_history = []
 

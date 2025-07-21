@@ -26,7 +26,6 @@ services:
       INTERCOM_TOKEN:
       INTERCOM_ADMIN_ID:
       REDIS_URL: redis://redis:6379/0
-      SENTENCE_TRANSFORMERS_HOME: /app/sentence-transformers
     deploy:
       resources:
         reservations:
