@@ -177,7 +177,7 @@ class RAGSystem:
         self.conversation_history = []
         print("Conversation history cleared.")
 
-    def rebuild_embeddings(self):
+    def rebuild(self):
         """
         Rebuild the embeddings for the knowledge base. This should be called whenever the knowledge base is updated.
         """

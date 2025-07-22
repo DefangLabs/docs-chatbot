@@ -116,7 +116,7 @@ def trigger_rebuild():
 
         print("Rebuilding embeddings...")
         try:
-            app.rag_system.rebuild_embeddings()
+            app.rag_system.rebuild()
         except Exception as e:
             print(f"Error rebuilding embeddings: {str(e)}")
             return jsonify({"error": "Error rebuilding embeddings", "details": str(e)}), 500
