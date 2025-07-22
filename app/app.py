@@ -68,7 +68,7 @@ def handle_ask_request(request, session):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html', debug=os.getenv('DEBUG'))
+    return render_template('index.html')
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -135,17 +135,6 @@ def download_file(name):
         "data", name, as_attachment=True
     )
 
-if os.getenv('DEBUG') == '1':
-    @app.route('/ask/debug', methods=['POST'])
-    def debug_context():
-        data = request.get_json()
-        query = data.get('query', '')
-        if not query:
-            return jsonify({"error": "Query is required"}), 400
-        context = app.rag_system.get_context(query)
-        return jsonify({"context": context})
-
-
 # Handle incoming webhooks from Intercom
 @app.route('/intercom-webhook', methods=['POST'])
 @csrf.exempt
@@ -186,7 +175,7 @@ def handle_webhook():
         if conversation_type == 'email':
             logger.info(f"Conversation {conversation_id} is of type email; no action taken.")
             return 'OK'
-        
+
         # Check if it is a user reply and do the admin-replied checks if so
         # For new user conversations, we will skip admin-replied check to avoid false positives from Intercom auto-replies
         if topic == 'conversation.user.replied':

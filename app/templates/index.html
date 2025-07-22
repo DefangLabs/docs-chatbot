@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="debug" content="{{ debug }}">
     <title>Ask Defang</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
@@ -273,12 +272,7 @@
             loadingSpinner.style.display = 'inline-block';
             sendButton.disabled = true;
 
-            const debug = document.querySelector('meta[name=debug]').content;
-            if (debug == '1') {
-                askDebug(query)
-            } else {
-                ask(query, responseContainer)
-            }
+            ask(query, responseContainer)
         }
 
         function ask(query, responseContainer) {
@@ -323,36 +317,6 @@
                     assistantResponse.textContent = 'Error: Failed to get response';
                     chatBox.scrollTop = chatBox.scrollHeight;
                 });
-        }
-
-        function askDebug(query) {
-            // fetch context for debugging
-            rateLimitingFetch('/ask/debug', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ query: query}),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    chatBox.innerHTML += `<p><strong>Debug Context:</strong> Error: ${data.error}</p>`;
-                } else {
-                    chatBox.innerHTML += `<p><strong>Debug Context:</strong> ${data.context}</p>`;
-                }
-                chatBox.scrollTop = chatBox.scrollHeight;
-                loadingSpinner.style.display = 'none';
-                sendButton.disabled = false;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                loadingSpinner.style.display = 'none';
-                sendButton.disabled = false;
-                chatBox.innerHTML += '<p><strong>Debug Context:</strong> Error: Failed to get context</p>';
-                chatBox.scrollTop = chatBox.scrollHeight;
-            });
         }
     </script>
 </body>
