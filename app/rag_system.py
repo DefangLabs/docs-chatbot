@@ -25,12 +25,15 @@ class RAGSystem:
             self.doc_embeddings = np.load('./data/doc_embeddings.npy')
             logging.info("Loaded existing document embeddings from disk.")
         else:
-            logging.info("No existing document embeddings found, creating new embeddings.")
-            self.doc_embeddings = self.embed_knowledge_base()
-            # cache doc_embeddings to disk
-            np.save('./data/doc_embeddings.npy', self.doc_embeddings.cpu().numpy())
+            self.rebuild_embeddings()
         logging.info("Knowledge base embeddings created")
         self.conversation_history = []
+
+    def rebuild_embeddings(self):
+        logging.info("No existing document embeddings found, creating new embeddings.")
+        self.doc_embeddings = self.embed_knowledge_base()
+        # cache doc_embeddings to disk
+        np.save('./data/doc_embeddings.npy', self.doc_embeddings.cpu().numpy())
 
     def load_knowledge_base(self):
         with open(self.knowledge_base_path, 'r') as kb_file:
@@ -183,7 +186,7 @@ class RAGSystem:
         """
         print("Rebuilding embeddings for the knowledge base...")
         self.knowledge_base = self.load_knowledge_base()  # Reload the knowledge base
-        self.doc_embeddings = self.embed_knowledge_base()  # Rebuild the embeddings
+        self.doc_embeddings = self.rebuild_embeddings()  # Rebuild the embeddings
         print("Embeddings have been rebuilt.")
 
     def get_citations(self, retrieved_docs):
