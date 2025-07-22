@@ -53,3 +53,5 @@ services:
       service: discord-bot
     env_file:
       - .env
+networks:
+  private:

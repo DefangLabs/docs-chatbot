@@ -40,6 +40,9 @@ services:
     depends_on:
       - redis
       - llm
+    networks:
+      - default
+      - private
 
   redis:
     image: redis:alpine
@@ -48,6 +51,8 @@ services:
         published: 6379
         protocol: tcp
         mode: host
+    networks:
+      - private
 
   llm:
     image: defangio/openai-access-gateway
@@ -61,6 +66,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
+    networks:
+      - private
 
   discord-bot:
     restart: unless-stopped
@@ -84,3 +91,5 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
     depends_on:
       - app
+networks:
+  private:
