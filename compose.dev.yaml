@@ -38,13 +38,21 @@ services:
         protocol: tcp
         mode: ingress
     environment:
-      - AWS_REGION=us-west-2
-      - AWS_PROFILE=defang-sandbox
+      # - AWS_REGION=us-west-2
+      # - AWS_PROFILE=defang-lab
+      - DEBUG=true
+      # - GCP_PROJECT_ID=jordan-project-463223
+      # - GOOGLE_CLOUD_PROJECT=jordan-project-463223
+      # - GCP_REGION=us-central1
+      # - PROVIDER=gcp
       - PORT=5051
     volumes:
       - type: bind
         source: ~/.aws
         target: /root/.aws
+      - type: bind
+        source: ~/.config/gcloud
+        target: /root/.config/gcloud
 
   discord-bot:
     restart: "no"
