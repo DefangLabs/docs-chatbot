@@ -16,7 +16,11 @@ from intercom import parse_html_to_text, set_conversation_human_replied, is_conv
 from utils import generate
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 logger = logging.getLogger(__name__)
 
 analytics.write_key = os.getenv('SEGMENT_WRITE_KEY')
