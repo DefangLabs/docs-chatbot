@@ -36,13 +36,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Set the environment variable for the sentence transformers model
 ENV SENTENCE_TRANSFORMERS_HOME="/root/.cache/sentence_transformers"
 
-COPY ./embeddings.py /app/embeddings.py
-
-# Preload the sentence transformer model to cache
-RUN python embeddings.py
-
 # Copy the application source code into the container
 COPY . /app
+
+# Preload the sentence transformer model to cache
+RUN python rag_system.py
 
 # Expose port 5050 for the Flask application
 EXPOSE 5050

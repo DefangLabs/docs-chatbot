@@ -2,11 +2,11 @@ import openai
 import json
 import os
 import sys
+import logging
 from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from embeddings import load_model
 import traceback
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
@@ -15,9 +15,21 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 class RAGSystem:
     def __init__(self, knowledge_base_path='./data/knowledge_base.json'):
         self.knowledge_base_path = knowledge_base_path
+
         self.knowledge_base = self.load_knowledge_base()
-        self.model = load_model()
-        self.doc_embeddings = self.embed_knowledge_base()
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+
+        # load existing embeddings if available
+        logging.info("Embedding knowledge base...")
+        if os.path.exists('./data/doc_embeddings.npy'):
+            self.doc_embeddings = np.load('./data/doc_embeddings.npy')
+            logging.info("Loaded existing document embeddings from disk.")
+        else:
+            logging.info("No existing document embeddings found, creating new embeddings.")
+            self.doc_embeddings = self.embed_knowledge_base()
+            # cache doc_embeddings to disk
+            np.save('./data/doc_embeddings.npy', self.doc_embeddings.cpu().numpy())
+        logging.info("Knowledge base embeddings created")
         self.conversation_history = []
 
     def load_knowledge_base(self):
@@ -38,7 +50,7 @@ class RAGSystem:
         return query_embedding
 
     def get_doc_embeddings(self):
-        return self.doc_embeddings.cpu()
+        return self.doc_embeddings
 
     def compute_document_scores(self, query_embedding, doc_embeddings, high_match_threshold):
         text_similarities = cosine_similarity(query_embedding, doc_embeddings)[0]
@@ -188,3 +200,11 @@ class RAGSystem:
         for doc in retrieved_docs:
             retrieved_text.append(f"{doc['about']}. {doc['text']}")
         return "\n\n".join(retrieved_text)
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    RAGSystem()
