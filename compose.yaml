@@ -21,8 +21,9 @@ services:
       SEGMENT_WRITE_KEY:
       SESSION_COOKIE_SECURE: 1
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
-      OPENAI_BASE_URL: "http://llm/api/v1"
-      MODEL: "ai/claude3-haiku"
+      OPENAI_BASE_URL: "https://api.openai.com/v1" # Use the official OpenAI API endpoint
+      # OPENAI_BASE_URL: "http://llm/api/v1"
+      MODEL: "gpt-4o-2024-08-06"
       INTERCOM_TOKEN:
       INTERCOM_ADMIN_ID:
       REDIS_URL: redis://redis:6379/0
@@ -54,20 +55,23 @@ services:
     networks:
       - private
 
-  llm:
-    image: defangio/openai-access-gateway
-    x-defang-llm: true
-    ports:
-      - target: 80
-        published: 80
-        protocol: tcp
-        mode: host
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-    networks:
-      - private
+  # llm:
+  #   # image: defangio/openai-access-gateway
+  #   build:
+  #     context: ../openai-access-gateway/src
+  #     dockerfile: Dockerfile_ecs
+  #   x-defang-llm: true
+  #   ports:
+  #     - target: 80
+  #       published: 80
+  #       protocol: tcp
+  #       mode: host
+  #   environment:
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
+  #   networks:
+  #     - private
 
   discord-bot:
     restart: unless-stopped
