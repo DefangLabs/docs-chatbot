@@ -4,3 +4,4 @@ sentence-transformers
 .tmp/
 node_modules
 venv
+app/data/doc_embeddings.npy
