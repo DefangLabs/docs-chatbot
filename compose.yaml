@@ -15,7 +15,6 @@ services:
     environment:
       ASK_TOKEN:
       FLASK_APP: app.py
-      DEBUG: 0
       REBUILD_TOKEN:
       SECRET_KEY:
       SEGMENT_WRITE_KEY:
