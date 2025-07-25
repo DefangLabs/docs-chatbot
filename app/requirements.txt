@@ -1,13 +1,13 @@
 Flask==2.0.1
 Flask-WTF==1.2.2
 Werkzeug==2.0.3
-scikit-learn==1.2.2
+scikit-learn==1.7.1
 segment-analytics-python==2.3.3
-numpy==1.24.4
-sentence-transformers==2.3.1
---find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==2.0.1+cpu
-huggingface_hub==0.15.1
+numpy==2.3.1
+sentence-transformers==5.0.0
+transformers==4.41.0
+torch==2.7.1
+huggingface_hub==0.33.4
 openai==0.28.0
 PyYAML==6.0.2
 GitPython==3.1.44
