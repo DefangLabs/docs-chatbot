@@ -195,7 +195,7 @@ class RAGSystem:
                 yield "An error occurred while generating the response."
             except (BrokenPipeError, OSError):
                 # Client disconnected, can't send error message
-                logging.warning("Client disconnected before error message could be sent", flush=True)
+                logging.warning("Client disconnected before error message could be sent")
 
     def clear_conversation_history(self):
         self.conversation_history = []
