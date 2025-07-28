@@ -80,9 +80,10 @@ class TestRAGSystem(unittest.TestCase):
         query = "Does Defang have an MCP sample?"
         query_embedding = self.rag_system.get_query_embedding(query)
         doc_embeddings = self.rag_system.get_doc_embeddings()
+        doc_about_embeddings = self.rag_system.doc_about_embeddings()
 
         # call function and get results
-        result = self.rag_system.compute_document_scores(query_embedding, doc_embeddings, high_match_threshold=0.8)
+        result = self.rag_system.compute_document_scores(query_embedding, doc_embeddings, doc_about_embeddings, high_match_threshold=0.8)
         # sort the result by relevance score in descending order
         result = sorted(result, key=lambda x: x["relevance_score"], reverse=True)
 
