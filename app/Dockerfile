@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Go for x86 architecture (latest supported version 1.21)
+# Install Go for AMD64 architecture (latest supported version 1.21)
 RUN curl -OL https://golang.org/dl/go1.21.1.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.21.1.linux-amd64.tar.gz && \
     rm go1.21.1.linux-amd64.tar.gz
@@ -49,4 +49,6 @@ EXPOSE 5050
 ENV FLASK_APP=app.py
 
 # Run the application using uWSGI
-CMD ["uwsgi", "--lazy-apps", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4"]
+# CMD ["uwsgi", "--lazy-apps", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4"]
+# longer timeout settings to allow for slower rag and llm responses
+CMD ["uwsgi", "--lazy-apps", "--http", "0.0.0.0:5050", "--wsgi-file", "app.py", "--callable", "app", "--processes", "4", "--harakiri", "300", "--socket-timeout", "300", "--http-timeout", "300", "--http-keepalive", "--http-auto-chunked"]
