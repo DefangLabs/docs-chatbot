@@ -146,6 +146,7 @@ class RAGSystem:
         messages.extend(self.conversation_history)
 
         try:
+            logging.debug(f"Sending query to LLM: {normalized_query}")
             stream = openai.ChatCompletion.create(
                 model=os.getenv("MODEL"),
                 messages=messages,
@@ -159,15 +160,30 @@ class RAGSystem:
 
             collected_messages = []
             for chunk in stream:
-                logging.info(f"Received chunk: {chunk}")
-                content = chunk['choices'][0]['delta'].get('content', '')
-                collected_messages.append(content)
-                yield content
-                if chunk['choices'][0].get('finish_reason') is not None:
+                try:
+                    logging.debug(f"Received chunk: {chunk}")
+                    content = chunk['choices'][0]['delta'].get('content', '')
+                    collected_messages.append(content)
+                    yield content
+                    if chunk['choices'][0].get('finish_reason') is not None:
+                        break
+                except (BrokenPipeError, OSError) as e:
+                    # Client disconnected, stop streaming
+                    logging.warning(f"Client disconnected during streaming: {e}")
+                    traceback.print_exc(file=sys.stderr)
                     break
 
+
+            logging.debug(f"Finished receiving response: {normalized_query}")
+
             if len(citations) > 0:
-                yield "\n\nReferences:\n" + "\n".join(citations)
+                try:
+                    yield "\n\nReferences:\n" + "\n".join(citations)
+                except (BrokenPipeError, OSError) as e:
+                    # Client disconnected, stop streaming
+                    logging.warning(f"Client disconnected during citations streaming: {e}")
+                    traceback.print_exc(file=sys.stderr)
+
 
             full_response = ''.join(collected_messages).strip()
             self.conversation_history.append({"role": "assistant", "content": full_response})
@@ -175,7 +191,11 @@ class RAGSystem:
         except Exception as e:
             print(f"Error in answer_query_stream: {e}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
-            yield "An error occurred while generating the response."
+            try:
+                yield "An error occurred while generating the response."
+            except (BrokenPipeError, OSError):
+                # Client disconnected, can't send error message
+                logging.warning("Client disconnected before error message could be sent")
 
     def clear_conversation_history(self):
         self.conversation_history = []
