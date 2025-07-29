@@ -293,6 +293,12 @@
 
         function ask(query, responseContainer) {
             const assistantResponse = responseContainer.querySelector('.assistant-response');
+            
+            // Add a timeout for fetch
+            const controller = new AbortController();
+            const signal = controller.signal;
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60-second timeout
+            
             // Send query to server
             rateLimitingFetch('/ask', {
                     method: 'POST',
@@ -301,8 +307,10 @@
                         'X-CSRFToken': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({ query: query }),
+                    signal: signal
                 })
                 .then(response => {
+                    clearTimeout(timeoutId); // Clear timeout if request succeeds
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
                     let responseText = '';
@@ -327,10 +335,16 @@
                     readStream();
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    clearTimeout(timeoutId); // Clear timeout if request fails
+                    if (error.name === 'AbortError') {
+                        assistantResponse.textContent = 'Request timed out. Please try again.';
+                        console.error('Request timed out. Error: ', error);
+                    } else {
+                        assistantResponse.textContent = `Failed to fetch response. Error: ${error.message}`;
+                        console.error('Failed to fetch response. Error:', error);
+                    }
                     loadingSpinner.style.display = 'none';
                     sendButton.disabled = false;
-                    assistantResponse.textContent = 'Error: Failed to get response';
                     chatBox.scrollTop = chatBox.scrollHeight;
                 });
         }
