@@ -222,7 +222,7 @@ app.post('/interactions', verifyKeyMiddleware(process.env.DISCORD_PUBLIC_KEY), a
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
           // Fetches a random emoji to send from a helper function
-          content: `Develop Anything, Deploy Anywhere ${getRandomEmoji()}`,
+          content: `Develop Once, Deploy Anywhere ${getRandomEmoji()}`,
         },
       });
     }
