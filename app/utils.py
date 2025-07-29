@@ -2,6 +2,7 @@ import sys
 import traceback
 import segment.analytics as analytics
 
+
 # Shared function to generate response stream from RAG system
 def generate(rag, query, source, anonymous_id):
     full_response = ""
@@ -22,8 +23,8 @@ def generate(rag, query, source, anonymous_id):
         # Track the query and response
         analytics.track(
             anonymous_id=anonymous_id,
-            event='Chatbot Question submitted',
-            properties={'query': query, 'response': full_response, 'source': source}
+            event="Chatbot Question submitted",
+            properties={"query": query, "response": full_response, "source": source},
         )
 
     return full_response

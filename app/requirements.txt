@@ -13,3 +13,7 @@ PyYAML==6.0.2
 GitPython==3.1.44
 redis==6.2.0
 fakeredis==2.30.1
+
+# linter
+ruff>=0.12.5
+pre-commit>=2.20.0
