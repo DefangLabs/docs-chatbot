@@ -4,6 +4,7 @@ import subprocess
 import re
 import json
 from git import Repo
+import logging
 
 kb_file_path = './data/knowledge_base.json'
 
@@ -32,22 +33,26 @@ def setup_repositories():
     for repo_name, repo_url in repos.items():
         clone_repository(repo_url, os.path.join(tmp_dir, repo_name))
 
+def run_command(cmd):
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    for line in process.stdout:
+        logging.info(line.rstrip())
+    for line in process.stderr:
+        logging.error(line.rstrip())
+    process.wait()
+    if process.returncode != 0:
+        raise RuntimeError(f"Command {cmd} failed with return code {process.returncode}")
+
 def run_prebuild_script():
     """ Run the defang-docs repo prebuild script"""
 
-    subprocess.run(
-        ["npm", "-C", ".tmp/defang-docs", "install"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-
-    subprocess.run(
-        ["npm", "-C", ".tmp/defang-docs", "run", "prebuild"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
+    run_command(["npm", "-C", ".tmp/defang-docs", "--loglevel=error", "install"])
+    run_command(["npm", "-C", ".tmp/defang-docs", "run", "prebuild"])
 
 def parse_markdown():
     """ Parse markdown files in the current directory into JSON """
