@@ -297,7 +297,7 @@
             // Add a timeout for fetch
             const controller = new AbortController();
             const signal = controller.signal;
-            const timeoutId = setTimeout(() => controller.abort(), 60000); //60-second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 60000); // 60-second timeout
             
             // Send query to server
             rateLimitingFetch('/ask', {
