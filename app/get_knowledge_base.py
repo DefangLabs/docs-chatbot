@@ -1,14 +1,14 @@
 import os
-import shutil
 import subprocess
 import re
 import json
 from git import Repo
 
-kb_file_path = './data/knowledge_base.json'
+kb_file_path = "./data/knowledge_base.json"
+
 
 def clone_repository(repo_url, local_dir):
-    """ Clone or pull the repository based on its existence. """
+    """Clone or pull the repository based on its existence."""
     if not os.path.exists(local_dir):
         print(f"Cloning repository into {local_dir}")
         Repo.clone_from(repo_url, local_dir, depth=1)
@@ -16,6 +16,7 @@ def clone_repository(repo_url, local_dir):
         print(f"Repository already exists at {local_dir}. Pulling latest changes...")
         repo = Repo(local_dir)
         repo.git.pull()
+
 
 def setup_repositories():
     tmp_dir = ".tmp"
@@ -25,38 +26,43 @@ def setup_repositories():
     repos = {
         "defang-docs": "https://github.com/DefangLabs/defang-docs.git",
         "defang": "https://github.com/DefangLabs/defang.git",
-        "samples": "https://github.com/DefangLabs/samples.git"
+        "samples": "https://github.com/DefangLabs/samples.git",
     }
 
     # Clone each repository
     for repo_name, repo_url in repos.items():
         clone_repository(repo_url, os.path.join(tmp_dir, repo_name))
 
+
 def run_prebuild_script():
-    """ Run the defang-docs repo prebuild script"""
+    """Run the defang-docs repo prebuild script"""
 
     subprocess.run(
         ["npm", "-C", ".tmp/defang-docs", "install"],
         check=True,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
     )
 
     subprocess.run(
         ["npm", "-C", ".tmp/defang-docs", "run", "prebuild"],
         check=True,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
     )
 
+
 def parse_markdown():
-    """ Parse markdown files in the current directory into JSON """
-    recursive_parse_directory('./.tmp/defang-docs')  # Parse markdown files in the current directory
+    """Parse markdown files in the current directory into JSON"""
+    recursive_parse_directory(
+        "./.tmp/defang-docs"
+    )  # Parse markdown files in the current directory
     print("Markdown parsing completed successfully.")
 
+
 def parse_markdown_file_to_json(json_output, current_id, file_path):
-    """ Parses individual markdown file and adds its content to JSON """
-    with open(file_path, 'r', encoding='utf-8') as file:
+    """Parses individual markdown file and adds its content to JSON"""
+    with open(file_path, "r", encoding="utf-8") as file:
         lines = file.readlines()
 
     # Skip the first 5 lines
@@ -67,13 +73,17 @@ def parse_markdown_file_to_json(json_output, current_id, file_path):
     current_section = {"about": [], "text": []}
     has_main_header = False
 
-    for line in markdown_content.split('\n'):
-        header_match = re.match(r'^(#{1,6}|\*\*+)\s+(.*)', line)  # Match `#`, `##`, ..., `######` and `**`
+    for line in markdown_content.split("\n"):
+        header_match = re.match(
+            r"^(#{1,6}|\*\*+)\s+(.*)", line
+        )  # Match `#`, `##`, ..., `######` and `**`
         if header_match:
             header_level = len(header_match.group(1).strip())
             header_text = header_match.group(2).strip()
 
-            if header_level == 1 or header_match.group(1).startswith('**'):  # Treat `**` as a main header
+            if header_level == 1 or header_match.group(1).startswith(
+                "**"
+            ):  # Treat `**` as a main header
                 if current_section["about"] or current_section["text"]:
                     sections.append(current_section)
                 current_section = {"about": [header_text], "text": []}
@@ -100,24 +110,33 @@ def parse_markdown_file_to_json(json_output, current_id, file_path):
         text = " ".join(line for line in section["text"] if line)
 
         if about and text:  # Only insert if both 'about' and 'text' are not empty
-            json_output.append({
-                "id": current_id,
-                "about": about,
-                "text": text,
-                "path": adjust_knowledge_base_entry_path(file_path)  # Adjust path format
-            })
+            json_output.append(
+                {
+                    "id": current_id,
+                    "about": about,
+                    "text": text,
+                    "path": adjust_knowledge_base_entry_path(
+                        file_path
+                    ),  # Adjust path format
+                }
+            )
+
 
 def adjust_knowledge_base_entry_path(file_path):
-    """ Adjusts the file path format for storage. """
-    return re.sub(r'\/(\d{4})-(\d{2})-(\d{2})-', r'/\1/\2/\3/', normalize_docs_path(file_path))
+    """Adjusts the file path format for storage."""
+    return re.sub(
+        r"\/(\d{4})-(\d{2})-(\d{2})-", r"/\1/\2/\3/", normalize_docs_path(file_path)
+    )
+
 
 def normalize_docs_path(path):
-    """ Normalizes the file path to ensure consistent formatting. """
+    """Normalizes the file path to ensure consistent formatting."""
     return path.replace("./.tmp/defang-docs", "").replace(".mdx", "").replace(".md", "")
 
+
 def parse_cli_markdown(json_output, current_id, file_path):
-    """ Parses CLI-specific markdown files """
-    with open(file_path, 'r', encoding='utf-8') as file:
+    """Parses CLI-specific markdown files"""
+    with open(file_path, "r", encoding="utf-8") as file:
         lines = file.readlines()
 
     if len(lines) < 5:
@@ -133,33 +152,37 @@ def parse_cli_markdown(json_output, current_id, file_path):
 
     # Only append if both 'about' and 'text' are not empty
     if about and text:
-        json_output.append({
-            "id": current_id,
-            "about": about,
-            "text": text,
-            "path": normalize_docs_path(file_path)
-        })
+        json_output.append(
+            {
+                "id": current_id,
+                "about": about,
+                "text": text,
+                "path": normalize_docs_path(file_path),
+            }
+        )
+
 
 def recursive_parse_directory(root_dir):
-    """ Recursively parses all markdown files in the directory. """
+    """Recursively parses all markdown files in the directory."""
     paths = []
     for dirpath, _dirnames, filenames in os.walk(root_dir):
         for filename in filenames:
             lower_filename = filename.lower()
-            if lower_filename.endswith('.md') or lower_filename.endswith('.mdx'):
+            if lower_filename.endswith(".md") or lower_filename.endswith(".mdx"):
                 paths.append(os.path.join(dirpath, filename))
 
-    with open(kb_file_path, 'r') as kb_file:
+    with open(kb_file_path, "r") as kb_file:
         kb_data = json.load(kb_file)
 
     for id, file_path in enumerate(paths, start=1):
-        if 'cli' in dirpath.lower() or 'cli' in filename.lower():
+        if "cli" in dirpath.lower() or "cli" in filename.lower():
             parse_cli_markdown(kb_data, id, file_path)
         else:
             parse_markdown_file_to_json(kb_data, id, file_path)
 
-    with open(kb_file_path, 'w') as kb_file:
+    with open(kb_file_path, "w") as kb_file:
         json.dump(kb_data, kb_file, indent=2)
+
 
 if __name__ == "__main__":
     setup_repositories()
