@@ -201,7 +201,7 @@
             </a>
         </div>
         <h2>Ask Defang</h2>
-        <div id="chat-box" class="chat-box"></div>
+        <div id="chat-box" class="chat-box">Welcome to Ask Defang. Let's start chatting!</div>
         <input type="text" autofocus="autofocus" id="query-input" class="input-box" placeholder="Ask a question...">
         <button id="send-button" class="submit-btn">
             Send
@@ -260,9 +260,25 @@
             // Display user query
             chatBox.innerHTML += `<p><strong>You:</strong> ${query}</p>`;
 
+            let processingMsg = `Processing<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>`;
+            // Animate the loading dots
+            setTimeout(() => {
+                const dots = responseContainer?.querySelectorAll('.loading-dots span');
+                if (!dots) return;
+                let visible = 1;
+                const interval = setInterval(() => {
+                    dots.forEach((dot, idx) => {
+                        dot.style.visibility = idx < visible ? 'visible' : 'hidden';
+                    });
+                    visible = visible < 3 ? visible + 1 : 1;
+                    // Stop animation when spinner is hidden (response received)
+                    if (loadingSpinner.style.display === 'none') clearInterval(interval);
+                }, 400);
+            }, 0);
+
             // Create a new response container for this query
             const responseContainer = document.createElement('p');
-            responseContainer.innerHTML = `<strong>Assistant:</strong> <span class="assistant-response"></span>`;
+            responseContainer.innerHTML = `<strong>Assistant:</strong> <span class="assistant-response">${processingMsg}</span>`;
             chatBox.appendChild(responseContainer);
 
             chatBox.scrollTop = chatBox.scrollHeight;
