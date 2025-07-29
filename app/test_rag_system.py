@@ -1,6 +1,5 @@
 import unittest
 
-from torch import cosine_similarity
 from rag_system import RAGSystem
 
 class TestRAGSystem(unittest.TestCase):
