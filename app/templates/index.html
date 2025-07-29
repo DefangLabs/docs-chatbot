@@ -337,7 +337,7 @@
                 .catch(error => {
                     clearTimeout(timeoutId); // Clear timeout if request fails
                     if (error.name === 'AbortError') {
-                        assistantResponse.textContent = 'Request timed out. Please try again in a moment.';
+                        assistantResponse.textContent = 'Request timed out. Please try again.';
                         console.error('Request timed out. Error: ', error);
                     } else {
                         assistantResponse.textContent = `Failed to fetch response. Error: ${error.message}`;
