@@ -335,6 +335,7 @@
                     readStream();
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId); // Clear timeout if request fails
                     if (error.name === 'AbortError') {
                         assistantResponse.textContent = 'Request timed out. Please try again in a moment.';
                         console.error('Request timed out. Error: ', error);
