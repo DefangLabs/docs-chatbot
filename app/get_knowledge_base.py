@@ -34,6 +34,7 @@ def setup_repositories():
     for repo_name, repo_url in repos.items():
         clone_repository(repo_url, os.path.join(tmp_dir, repo_name))
 
+
 def run_command(cmd):
     process = subprocess.Popen(
         cmd,
@@ -47,10 +48,13 @@ def run_command(cmd):
         logging.error(line.rstrip())
     process.wait()
     if process.returncode != 0:
-        raise RuntimeError(f"Command {cmd} failed with return code {process.returncode}")
+        raise RuntimeError(
+            f"Command {cmd} failed with return code {process.returncode}"
+        )
+
 
 def run_prebuild_script():
-    """ Run the defang-docs repo prebuild script"""
+    """Run the defang-docs repo prebuild script"""
 
     run_command(["npm", "-C", ".tmp/defang-docs", "--loglevel=error", "install"])
     run_command(["npm", "-C", ".tmp/defang-docs", "run", "prebuild"])
