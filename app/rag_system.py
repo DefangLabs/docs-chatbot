@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import traceback
+from atomicwrites import atomic_write
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -36,15 +37,29 @@ class RAGSystem:
         logging.info("Knowledge base embeddings created")
         self.conversation_history = []
 
+    def _atomic_save_numpy(self, file_path, data):
+        with atomic_write(file_path, mode="wb", overwrite=True) as f:
+            np.save(f, data)
+
     def rebuild_embeddings(self):
-        logging.info("No existing document embeddings found, creating new embeddings.")
-        self.doc_embeddings = self.embed_knowledge_base()
-        self.doc_about_embeddings = self.embed_knowledge_base_about()
-        # cache doc_embeddings to disk
-        np.save("./data/doc_embeddings.npy", self.doc_embeddings.cpu().numpy())
-        np.save(
-            "./data/doc_about_embeddings.npy", self.doc_about_embeddings.cpu().numpy()
+        logging.info("Rebuilding document embeddings...")
+
+        new_doc_embeddings = self.embed_knowledge_base()
+        new_about_embeddings = self.embed_knowledge_base_about()
+
+        # Atomic saves with guaranteed order
+        self._atomic_save_numpy(
+            "./data/doc_embeddings.npy", new_doc_embeddings.cpu().numpy()
         )
+        self._atomic_save_numpy(
+            "./data/doc_about_embeddings.npy", new_about_embeddings.cpu().numpy()
+        )
+
+        # Update in-memory embeddings only after successful saves
+        self.doc_embeddings = new_doc_embeddings
+        self.doc_about_embeddings = new_about_embeddings
+
+        logging.info("Embeddings rebuilt successfully.")
 
     def load_knowledge_base(self):
         with open(self.knowledge_base_path, "r") as kb_file:
