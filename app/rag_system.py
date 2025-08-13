@@ -15,6 +15,10 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 class RAGSystem:
+    # Cache file paths
+    DOC_EMBEDDINGS_PATH = "./data/doc_embeddings.npy"
+    DOC_ABOUT_EMBEDDINGS_PATH = "./data/doc_about_embeddings.npy"
+
     def __init__(self, knowledge_base_path="./data/knowledge_base.json"):
         self.knowledge_base_path = knowledge_base_path
 
@@ -24,13 +28,22 @@ class RAGSystem:
         # load existing embeddings if available
         logging.info("Embedding knowledge base...")
 
-        if os.path.exists("./data/doc_about_embeddings.npy") and os.path.exists(
-            "./data/doc_embeddings.npy"
+        if os.path.exists(self.DOC_ABOUT_EMBEDDINGS_PATH) and os.path.exists(
+            self.DOC_EMBEDDINGS_PATH
         ):
-            self.doc_about_embeddings = np.load("./data/doc_about_embeddings.npy")
+            self.doc_about_embeddings = np.load(self.DOC_ABOUT_EMBEDDINGS_PATH)
             logging.info("Loaded existing about document about embeddings from disk.")
-            self.doc_embeddings = np.load("./data/doc_embeddings.npy")
+            self.doc_embeddings = np.load(self.DOC_EMBEDDINGS_PATH)
             logging.info("Loaded existing document embeddings from disk.")
+
+            # Save file timestamps when loading cache
+            self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
+            self.doc_about_embeddings_timestamp = os.path.getmtime(
+                self.DOC_ABOUT_EMBEDDINGS_PATH
+            )
+            logging.info(
+                f"Cache loaded - doc_embeddings timestamp: {self.doc_embeddings_timestamp}, doc_about_embeddings timestamp: {self.doc_about_embeddings_timestamp}"
+            )
         else:
             self.rebuild_embeddings()
 
@@ -49,15 +62,21 @@ class RAGSystem:
 
         # Atomic saves with guaranteed order
         self._atomic_save_numpy(
-            "./data/doc_embeddings.npy", new_doc_embeddings.cpu().numpy()
+            self.DOC_EMBEDDINGS_PATH, new_doc_embeddings.cpu().numpy()
         )
         self._atomic_save_numpy(
-            "./data/doc_about_embeddings.npy", new_about_embeddings.cpu().numpy()
+            self.DOC_ABOUT_EMBEDDINGS_PATH, new_about_embeddings.cpu().numpy()
         )
 
         # Update in-memory embeddings only after successful saves
         self.doc_embeddings = new_doc_embeddings
         self.doc_about_embeddings = new_about_embeddings
+
+        # Update file timestamps after successful saves
+        self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
+        self.doc_about_embeddings_timestamp = os.path.getmtime(
+            self.DOC_ABOUT_EMBEDDINGS_PATH
+        )
 
         logging.info("Embeddings rebuilt successfully.")
 
@@ -117,6 +136,43 @@ class RAGSystem:
 
         return result
 
+    def cache_check(func):
+        """Decorator to automatically check cache consistency"""
+
+        def wrapper(self, *args, **kwargs):
+            try:
+                current_times = [
+                    os.path.getmtime(self.DOC_EMBEDDINGS_PATH),
+                    os.path.getmtime(self.DOC_ABOUT_EMBEDDINGS_PATH),
+                ]
+                stored_times = [
+                    self.doc_embeddings_timestamp,
+                    self.doc_about_embeddings_timestamp,
+                ]
+
+                # update cache if timestamps are different from out last load
+                if current_times != stored_times:
+                    self._reload_cache()
+
+            except (OSError, FileNotFoundError, PermissionError):
+                logging.warning("Cache files inaccessible, rebuilding...")
+                self.rebuild_embeddings()
+
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+    def _reload_cache(self):
+        self.doc_embeddings = np.load(self.DOC_EMBEDDINGS_PATH)
+        self.doc_about_embeddings = np.load(self.DOC_ABOUT_EMBEDDINGS_PATH)
+
+        # update our timestamps of the cached files
+        self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
+        self.doc_about_embeddings_timestamp = os.path.getmtime(
+            self.DOC_ABOUT_EMBEDDINGS_PATH
+        )
+
+    @cache_check
     def retrieve(
         self, query, similarity_threshold=0.4, high_match_threshold=0.8, max_docs=5
     ):
