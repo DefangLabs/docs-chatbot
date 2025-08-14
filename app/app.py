@@ -15,6 +15,7 @@ import subprocess
 import os
 import segment.analytics as analytics
 import uuid
+import threading
 
 import logging
 import redis
@@ -117,12 +118,7 @@ def v1_ask():
         return jsonify({"error": "Invalid or missing Ask Token"}), 401
 
 
-@app.route("/trigger-rebuild", methods=["POST"])
-@csrf.exempt
-def trigger_rebuild():
-    token = request.args.get("token")
-    if token != os.getenv("REBUILD_TOKEN"):
-        return jsonify({"error": "Unauthorized"}), 401
+def run_rebuild():
     try:
         print("Running get_knowledge_base.py script...")
         result = subprocess.run(
@@ -130,12 +126,7 @@ def trigger_rebuild():
         )
         if result.returncode != 0:
             print(f"Error running get_knowledge_base.py script: {result.stderr}")
-            return jsonify(
-                {
-                    "error": "Error running get_knowledge_base.py script",
-                    "details": result.stderr,
-                }
-            ), 500
+            return
 
         print("Finished running get_knowledge_base.py script.")
 
@@ -146,12 +137,7 @@ def trigger_rebuild():
         )
         if result.returncode != 0:
             print(f"Error running get_samples_examples.py script: {result.stderr}")
-            return jsonify(
-                {
-                    "error": "Error running get_samples_examples.py script",
-                    "details": result.stderr,
-                }
-            ), 500
+            return
 
         print("Finished running get_samples_examples.py script.")
 
@@ -160,14 +146,28 @@ def trigger_rebuild():
             app.rag_system.rebuild()
         except Exception as e:
             logging.error(f"Error rebuilding embeddings: {str(e)}")
-            return jsonify({"error": "Error rebuilding embeddings"}), 500
+            return
 
         logging.info("Finished rebuilding embeddings.")
-        return jsonify({"status": "Rebuild triggered successfully"}), 200
 
     except Exception as e:
-        print(f"Error in /trigger-rebuild endpoint: {e}")
-        return jsonify({"error": "Internal Server Error"}), 500
+        logging.error(f"Error in rebuild process: {e}")
+
+
+@app.route("/trigger-rebuild", methods=["POST"])
+@csrf.exempt
+def trigger_rebuild():
+    token = request.args.get("token")
+    if token != os.getenv("REBUILD_TOKEN"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Start the rebuild in a background thread
+    thread = threading.Thread(target=run_rebuild)
+    thread.daemon = True  # Dies when main process dies
+    thread.start()
+
+    # Return immediately
+    return jsonify({"status": "Rebuild started successfully"}), 202
 
 
 @app.route("/data/<path:name>")
