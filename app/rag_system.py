@@ -22,6 +22,11 @@ class RAGSystem:
     def __init__(self, knowledge_base_path="./data/knowledge_base.json"):
         self.knowledge_base_path = knowledge_base_path
 
+        # Lock for atomic updates of in-memory cache
+        import threading
+
+        self._update_lock = threading.Lock()
+
         knowledge_base = self.load_knowledge_base()
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -31,20 +36,25 @@ class RAGSystem:
         if os.path.exists(self.DOC_ABOUT_EMBEDDINGS_PATH) and os.path.exists(
             self.DOC_EMBEDDINGS_PATH
         ):
-            self.doc_about_embeddings = np.load(self.DOC_ABOUT_EMBEDDINGS_PATH)
-            logging.info("Loaded existing about document about embeddings from disk.")
-            self.doc_embeddings = np.load(self.DOC_EMBEDDINGS_PATH)
-            logging.info("Loaded existing document embeddings from disk.")
-            self.knowledge_base = knowledge_base
+            with self._update_lock:
+                self.doc_about_embeddings = np.load(self.DOC_ABOUT_EMBEDDINGS_PATH)
+                logging.info(
+                    "Loaded existing about document about embeddings from disk."
+                )
+                self.doc_embeddings = np.load(self.DOC_EMBEDDINGS_PATH)
+                logging.info("Loaded existing document embeddings from disk.")
+                self.knowledge_base = knowledge_base
 
-            # Save file timestamps when loading cache
-            self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
-            self.doc_about_embeddings_timestamp = os.path.getmtime(
-                self.DOC_ABOUT_EMBEDDINGS_PATH
-            )
-            logging.info(
-                f"Cache loaded - doc_embeddings timestamp: {self.doc_embeddings_timestamp}, doc_about_embeddings timestamp: {self.doc_about_embeddings_timestamp}"
-            )
+                # Save file timestamps when loading cache
+                self.doc_embeddings_timestamp = os.path.getmtime(
+                    self.DOC_EMBEDDINGS_PATH
+                )
+                self.doc_about_embeddings_timestamp = os.path.getmtime(
+                    self.DOC_ABOUT_EMBEDDINGS_PATH
+                )
+                logging.info(
+                    f"Cache loaded - doc_embeddings timestamp: {self.doc_embeddings_timestamp}, doc_about_embeddings timestamp: {self.doc_about_embeddings_timestamp}"
+                )
         else:
             self.rebuild_embeddings(knowledge_base)
 
@@ -61,24 +71,33 @@ class RAGSystem:
         new_doc_embeddings = self.embed_knowledge_base(knowledge_base)
         new_about_embeddings = self.embed_knowledge_base_about(knowledge_base)
 
-        # Atomic saves with guaranteed order
-        self._atomic_save_numpy(
-            self.DOC_EMBEDDINGS_PATH, new_doc_embeddings.cpu().numpy()
-        )
-        self._atomic_save_numpy(
-            self.DOC_ABOUT_EMBEDDINGS_PATH, new_about_embeddings.cpu().numpy()
-        )
+        # Defensive check for size mismatches
+        sizes = [
+            len(new_about_embeddings),
+            len(new_doc_embeddings),
+            len(knowledge_base),
+        ]
+        if len(set(sizes)) > 1:  # Not all sizes are equal
+            logging.error(
+                f"rebuild embeddings Array size mismatch detected: text_similarities={sizes[0]}, about_similarities={sizes[1]}, knowledge_base={sizes[2]}"
+            )
+            return  # Abandon update
 
-        # Update in-memory embeddings only after successful saves
-        self.knowledge_base = knowledge_base
-        self.doc_embeddings = new_doc_embeddings
-        self.doc_about_embeddings = new_about_embeddings
-
-        # Update file timestamps after successful saves
-        self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
-        self.doc_about_embeddings_timestamp = os.path.getmtime(
-            self.DOC_ABOUT_EMBEDDINGS_PATH
-        )
+        # Atomically update files, in-memory cache, and timestamps
+        with self._update_lock:
+            self._atomic_save_numpy(
+                self.DOC_EMBEDDINGS_PATH, new_doc_embeddings.cpu().numpy()
+            )
+            self._atomic_save_numpy(
+                self.DOC_ABOUT_EMBEDDINGS_PATH, new_about_embeddings.cpu().numpy()
+            )
+            self.knowledge_base = knowledge_base
+            self.doc_embeddings = new_doc_embeddings
+            self.doc_about_embeddings = new_about_embeddings
+            self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
+            self.doc_about_embeddings_timestamp = os.path.getmtime(
+                self.DOC_ABOUT_EMBEDDINGS_PATH
+            )
 
         logging.info("Embeddings rebuilt successfully.")
 
@@ -196,19 +215,7 @@ class RAGSystem:
     ):
         relevance_scores = []
 
-        # Defensive check for size mismatches
-        sizes = [
-            len(text_similarities),
-            len(about_similarities),
-            len(self.knowledge_base),
-        ]
-        if len(set(sizes)) > 1:  # Not all sizes are equal
-            logging.warning(
-                f"Array size mismatch detected: text_similarities={sizes[0]}, about_similarities={sizes[1]}, knowledge_base={sizes[2]}"
-            )
-
-        max_index = min(sizes)
-        for i in range(max_index):
+        for i, _ in enumerate(self.knowledge_base):
             about_similarity = about_similarities[i]
             text_similarity = text_similarities[i]
             # If either about or text similarity is above the high match threshold, prioritize it
@@ -337,9 +344,7 @@ class RAGSystem:
         """
         print("Rebuilding embeddings for the knowledge base...")
         knowledge_base = self.load_knowledge_base()  # Reload the knowledge base
-        self.doc_embeddings = self.rebuild_embeddings(
-            knowledge_base
-        )  # Rebuild the embeddings
+        self.rebuild_embeddings(knowledge_base)  # Rebuild the embeddings
         print("Embeddings have been rebuilt.")
 
     def get_citations(self, retrieved_docs):
