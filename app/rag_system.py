@@ -3,12 +3,14 @@ import json
 import os
 import sys
 import logging
+import threading
 from datetime import date
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import traceback
 from atomicwrites import atomic_write
+
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -20,12 +22,8 @@ class RAGSystem:
     DOC_ABOUT_EMBEDDINGS_PATH = "./data/doc_about_embeddings.npy"
 
     def __init__(self, knowledge_base_path="./data/knowledge_base.json"):
-        self.knowledge_base_path = knowledge_base_path
-
-        # Lock for atomic updates of in-memory cache
-        import threading
-
         self._update_lock = threading.Lock()
+        self.knowledge_base_path = knowledge_base_path
 
         knowledge_base = self.load_knowledge_base()
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
