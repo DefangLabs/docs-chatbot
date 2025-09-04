@@ -51,6 +51,13 @@ csrf = CSRFProtect(app)
 r = redis.from_url(os.getenv("REDIS_URL"), decode_responses=True)
 
 
+# Global error handler for unhandled exceptions
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logger.error(f"Unhandled exception in {request.endpoint}: {str(e)}", exc_info=True)
+    return jsonify({"error": "An error occurred while processing your request."}), 500
+
+
 def validate_pow(nonce, data, difficulty):
     # Calculate the sha256 of the concatenated string of 32-bit X-Nonce header and raw body.
     # This calculation has to match the code on the client side, in index.html.
