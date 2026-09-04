@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure AWS Credentials for CI
         uses: aws-actions/configure-aws-credentials@v4
