@@ -32,7 +32,7 @@ jobs:
         with:
           aws-region: us-east-1
           role-chaining: true
-          role-duration-seconds: 1200
+          role-duration-seconds: 3600
           role-to-assume: arn:aws:iam::407839483216:role/admin
 
       - name: Set up cache for pip dependencies
