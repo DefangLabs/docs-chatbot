@@ -283,9 +283,9 @@ class RAGSystem:
                 messages=messages,
                 temperature=0.25,
                 max_tokens=2048,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0,
+                # Claude 4.5+ on Bedrock rejects temperature and top_p together
+                # ("`temperature` and `top_p` cannot both be specified for this
+                # model"), so send only temperature. top_p=1 was a no-op anyway.
                 stream=True,
             )
 
