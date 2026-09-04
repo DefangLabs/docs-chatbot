@@ -1,7 +1,7 @@
+import os
 import unittest
 
 from rag_system import RAGSystem
-import os
 
 
 class TestRAGSystem(unittest.TestCase):

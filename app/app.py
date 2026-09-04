@@ -1,31 +1,31 @@
+import hashlib
+import logging
+import os
+import subprocess
+import threading
+import uuid
+
+import redis
 from flask import (
     Flask,
-    request,
+    Response,
     jsonify,
     render_template,
-    Response,
-    stream_with_context,
-    session,
+    request,
     send_from_directory,
+    session,
+    stream_with_context,
 )
 from flask_wtf.csrf import CSRFProtect
-from rag_system import RAGSystem
-import hashlib
-import subprocess
-import os
-import segment.analytics as analytics
-import uuid
-import threading
-
-import logging
-import redis
 from intercom import (
-    parse_html_to_text,
-    set_conversation_human_replied,
-    is_conversation_human_replied,
     answer_intercom_conversation,
     check_intercom_ip,
+    is_conversation_human_replied,
+    parse_html_to_text,
+    set_conversation_human_replied,
 )
+from rag_system import RAGSystem
+from segment import analytics
 from utils import generate
 
 # Configure logging
@@ -54,7 +54,7 @@ r = redis.from_url(os.getenv("REDIS_URL"), decode_responses=True)
 # Global error handler for unhandled exceptions
 @app.errorhandler(Exception)
 def handle_exception(e):
-    logger.error(f"Unhandled exception in {request.endpoint}: {str(e)}", exc_info=True)
+    logger.error(f"Unhandled exception in {request.endpoint}: {e!s}", exc_info=True)
     return jsonify({"error": "An error occurred while processing your request."}), 500
 
 
@@ -152,7 +152,7 @@ def run_rebuild():
         try:
             app.rag_system.rebuild()
         except Exception as e:
-            logging.error(f"Error rebuilding embeddings: {str(e)}")
+            logging.error(f"Error rebuilding embeddings: {e!s}")
             return
 
         logging.info("Finished rebuilding embeddings.")

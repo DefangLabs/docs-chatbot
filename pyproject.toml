@@ -1,0 +1,18 @@
+[tool.ruff.lint]
+# Rules below are pre-existing findings that surfaced when ruff's default
+# rule set grew (the CI workflow ran an unpinned "latest" ruff). They need a
+# deliberate code review rather than a mechanical fix, so they're ignored
+# here for now. Ruff itself is pinned in .github/workflows/build.yaml so
+# this list won't silently grow again. Follow-up: DefangLabs/docs-chatbot#114
+ignore = [
+    "LOG015", # root-logger-call: needs per-module loggers introduced deliberately
+    "LOG014", # exc-info-outside-except-handler
+    "BLE001", # blind-except: several catches are intentionally broad
+    "RUF012", # mutable-class-default: mostly test mock classes
+    "PLW1510", # subprocess-run-without-check: needs a check=True/False decision per call
+    "DTZ011", # call-date-today: needs a timezone decision
+    "SIM102", # collapsible-if
+    "SIM103", # needless-bool
+    "PIE810", # multiple-starts-ends-with
+    "EXE001", # shebang-not-executable
+]

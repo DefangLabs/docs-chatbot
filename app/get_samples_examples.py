@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-import os
 import json
-import tempfile
+import os
 import subprocess
+import tempfile
 
 
 def clone_repo(repo_url, target_dir):

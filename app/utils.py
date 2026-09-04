@@ -1,12 +1,13 @@
 import sys
 import traceback
-import segment.analytics as analytics
+
+from segment import analytics
 
 
 # Shared function to generate response stream from RAG system
 def generate(rag, query, source, anonymous_id):
     full_response = ""
-    print(f"Received query: {str(query)}", file=sys.stderr)
+    print(f"Received query: {query!s}", file=sys.stderr)
     try:
         for token in rag.answer_query_stream(query):
             yield token
