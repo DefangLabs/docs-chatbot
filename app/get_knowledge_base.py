@@ -1,9 +1,10 @@
-import os
-import subprocess
-import re
 import json
-from git import Repo
 import logging
+import os
+import re
+import subprocess
+
+from git import Repo
 
 kb_file_path = "./data/knowledge_base.json"
 

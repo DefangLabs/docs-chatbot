@@ -1,16 +1,16 @@
-import openai
 import json
+import logging
 import os
 import sys
-import logging
 import threading
-from datetime import date
-from sentence_transformers import SentenceTransformer
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 import traceback
-from atomicwrites import atomic_write
+from datetime import date
 
+import numpy as np
+import openai
+from atomicwrites import atomic_write
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 openai.api_base = os.getenv("OPENAI_BASE_URL")
 openai.api_key = os.getenv("OPENAI_API_KEY")

@@ -1,11 +1,12 @@
 # Intercom API helper functions for handling conversations and replies
-import os
-import requests
 import hashlib
-from flask import jsonify
-from html.parser import HTMLParser
-from utils import generate
 import logging
+import os
+from html.parser import HTMLParser
+
+import requests
+from flask import jsonify
+from utils import generate
 
 logger = logging.getLogger(__name__)
 

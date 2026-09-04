@@ -1,4 +1,5 @@
 import unittest
+
 from get_knowledge_base import adjust_knowledge_base_entry_path
 
 
