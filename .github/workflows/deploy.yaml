@@ -54,7 +54,7 @@ jobs:
         run: python3 test_intercom.py
 
       - name: Deploy
-        uses: DefangLabs/defang-github-action@v1.1.3
+        uses: DefangLabs/defang-github-action@v2
         with:
           cli-version: nightly
           config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY INTERCOM_TOKEN INTERCOM_ADMIN_ID
