@@ -10,7 +10,7 @@ torch==2.8.0
 huggingface_hub==0.15.1
 openai==0.28.0
 PyYAML==6.0.2
-GitPython==3.1.44
+GitPython==3.1.58
 redis==6.2.0
 fakeredis==2.30.1
 atomicwrites==1.4.1
