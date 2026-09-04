@@ -6,7 +6,7 @@ segment-analytics-python==2.3.3
 numpy==1.24.4
 sentence-transformers==2.3.1
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==2.0.1+cpu
+torch==2.8.0
 huggingface_hub==0.15.1
 openai==0.28.0
 PyYAML==6.0.2
