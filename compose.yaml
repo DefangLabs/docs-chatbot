@@ -20,9 +20,10 @@ services:
       SECRET_KEY:
       SEGMENT_WRITE_KEY:
       SESSION_COOKIE_SECURE: 1
-      OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
-      OPENAI_BASE_URL: "http://llm/api/v1"
-      MODEL: "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+      # OPENAI_API_KEY and MODEL are injected by Defang from the "llm" model
+      # below; OPENAI_BASE_URL is pinned here because the injected value ends in
+      # a slash and the openai 0.x client would then request "/v1//chat/...".
+      OPENAI_BASE_URL: "http://llm:4000/v1"
       INTERCOM_TOKEN:
       INTERCOM_ADMIN_ID:
       REDIS_URL: redis://redis:6379/0
@@ -39,7 +40,10 @@ services:
       start_period: 240s
     depends_on:
       - redis
-      - llm
+    models:
+      llm:
+        endpoint_var: OPENAI_BASE_URL
+        model_var: MODEL
 
   redis:
     image: redis:alpine
@@ -48,27 +52,6 @@ services:
         published: 6379
         protocol: tcp
         mode: host
-
-  llm:
-    image: defangio/openai-access-gateway
-    x-defang-llm: true
-    ports:
-      - target: 80
-        published: 80
-        protocol: tcp
-        mode: host
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    healthcheck:
-      test:
-        - CMD
-        - python3
-        - -c
-        - import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost/health').getcode() == 200 else 1)
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
 
   discord-bot:
     restart: unless-stopped
@@ -92,3 +75,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
     depends_on:
       - app
+
+models:
+  llm:
+    model: us.anthropic.claude-haiku-4-5-20251001-v1:0
