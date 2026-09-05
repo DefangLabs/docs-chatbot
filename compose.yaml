@@ -2,7 +2,6 @@ services:
   app:
     restart: always
     domainname: ask.defang.io
-    x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     platform: linux/amd64
     build:
       context: ./app
@@ -78,4 +77,8 @@ services:
 
 models:
   llm:
-    model: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    # On Azure, x-defang-llm provisions a managed AI Foundry deployment and picks
+    # the concrete model dynamically (no way to pin a specific model there) —
+    # the deployment is named after this alias, so it must be "llm" to match
+    # what MODEL gets wired to below, not a Bedrock model ID.
+    model: llm
