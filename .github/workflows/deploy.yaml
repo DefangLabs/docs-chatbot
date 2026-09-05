@@ -118,17 +118,30 @@ jobs:
         working-directory: ./app
         run: python3 test_intercom.py
 
+      # A Defang config named OPENAI_API_KEY is injected into the app as an ECS
+      # *secret*, which takes precedence over the plain env var Defang wires from
+      # the "llm" model. That made the app send the real OpenAI key while LiteLLM
+      # expected its master key, so every request failed auth ("No connected db."
+      # - LiteLLM falls back to a DB lookup for any key that is not the master).
+      # `config rm` only warns when the config is already gone, so this is safe to
+      # re-run and can be dropped once it has run against every stack.
+      - name: Remove the OPENAI_API_KEY config that shadows the LiteLLM master key
+        uses: DefangLabs/defang-github-action@v2
+        with:
+          cli-version: nightly
+          provider: aws
+          command: config rm OPENAI_API_KEY
+
       - name: Deploy
         uses: DefangLabs/defang-github-action@v2
         with:
           cli-version: nightly
-          config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY INTERCOM_TOKEN INTERCOM_ADMIN_ID
+          config-env-vars: ASK_TOKEN REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY INTERCOM_TOKEN INTERCOM_ADMIN_ID
           provider: aws
           allow-upgrade: true
 
         env:
           ASK_TOKEN: ${{ secrets.ASK_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           REBUILD_TOKEN: ${{ secrets.REBUILD_TOKEN }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           SEGMENT_WRITE_KEY: ${{ secrets.SEGMENT_WRITE_KEY }}
