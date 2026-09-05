@@ -2,7 +2,6 @@ services:
   app:
     restart: always
     domainname: ask.defang.io
-    x-defang-dns-role: arn:aws:iam::258338292852:role/dnsadmin-39a19c3
     platform: linux/amd64
     build:
       context: ./app
@@ -22,7 +21,11 @@ services:
       SESSION_COOKIE_SECURE: 1
       OPENAI_API_KEY: ${OPENAI_API_KEY} # Set your OpenAI API key here or in the .env file
       OPENAI_BASE_URL: "http://llm/api/v1"
-      MODEL: "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+      # On Azure, x-defang-llm provisions a managed Azure AI Foundry deployment instead
+      # of running this container's Bedrock gateway, and names that deployment after the
+      # "llm" service (no LLM_MODEL override is set below) — so this must be "llm", not a
+      # Bedrock model ID, for requests to reach it.
+      MODEL: "llm"
       INTERCOM_TOKEN:
       INTERCOM_ADMIN_ID:
       REDIS_URL: redis://redis:6379/0
