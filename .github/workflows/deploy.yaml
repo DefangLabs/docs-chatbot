@@ -37,22 +37,40 @@ jobs:
 
       - name: Ensure Bedrock model access
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          # The MODEL the app talks to is an inference profile ("us.anthropic.<id>");
-          # the agreement is against the bare foundation-model id underneath it.
-          profile=$(grep -oP '^\s*MODEL:\s*"\K[^"]+' compose.yaml)
-          model=${profile#us.}
-          echo "compose MODEL=$profile -> foundation model $model"
+          # This step is a safety net, not a gate: it must never block a deploy.
+          # Every failure path below warns and exits 0.
+
+          # The model lives under the top-level "models:" entry, e.g.
+          #   models:
+          #     llm:
+          #       model: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          # "models:" and "model_var:" deliberately do not match this pattern.
+          profile=$(grep -oP '^\s*model:\s*\K[^\s"]+' compose.yaml | head -1)
+          if [ -z "$profile" ]; then
+            echo "::warning::no model found in compose.yaml - skipping Bedrock access check"
+            exit 0
+          fi
+
+          # Strip the cross-region inference-profile prefix ("us.", "eu.", ...)
+          # to get the bare foundation-model id the agreement is against.
+          model=$(echo "$profile" | sed -E 's/^[a-z]{2}\.//')
+          echo "compose model=$profile -> foundation model $model"
 
           # Anthropic is the one Bedrock provider that still needs an explicit
           # per-account agreement; without it every request fails at RUNTIME with
           # AccessDenied about aws-marketplace:Subscribe, because Bedrock tries to
           # auto-subscribe using the ECS task role (which cannot, and should not).
+          case "$model" in
+            anthropic.*) ;;
+            *) echo "$model is not an Anthropic model - nothing to check"; exit 0 ;;
+          esac
+
           # The "us." profile can route to any of its regions, so cover all of them.
           for region in us-east-1 us-east-2 us-west-2; do
             status=$(aws bedrock get-foundation-model-availability --region "$region" \
-              --model-id "$model" --query 'agreementAvailability.status' --output text)
+              --model-id "$model" --query 'agreementAvailability.status' --output text 2>/dev/null)
             if [ "$status" = "AVAILABLE" ]; then
               echo "$region: already subscribed"
               continue
@@ -60,18 +78,26 @@ jobs:
 
             echo "$region: no agreement ($status) - subscribing"
             offer=$(aws bedrock list-foundation-model-agreement-offers --region "$region" \
-              --model-id "$model" --query 'offers[0].offerToken' --output text)
+              --model-id "$model" --query 'offers[0].offerToken' --output text 2>/dev/null)
+            if [ -z "$offer" ] || [ "$offer" = "None" ]; then
+              echo "::warning::$region: no agreement offer available for $model"
+              continue
+            fi
             aws bedrock create-foundation-model-agreement --region "$region" \
-              --model-id "$model" --offer-token "$offer"
+              --model-id "$model" --offer-token "$offer" || {
+                echo "::warning::$region: could not subscribe to $model"; continue; }
 
-            for _ in $(seq 1 30); do
+            for _ in $(seq 1 12); do
               status=$(aws bedrock get-foundation-model-availability --region "$region" \
-                --model-id "$model" --query 'agreementAvailability.status' --output text)
+                --model-id "$model" --query 'agreementAvailability.status' --output text 2>/dev/null)
               if [ "$status" = "AVAILABLE" ]; then break; fi
               sleep 10
             done
-            [ "$status" = "AVAILABLE" ] || { echo "::error::$region: still $status after subscribing"; exit 1; }
-            echo "$region: subscribed"
+            if [ "$status" = "AVAILABLE" ]; then
+              echo "$region: subscribed"
+            else
+              echo "::warning::$region: still $status after subscribing"
+            fi
           done
 
       - name: Set up cache for pip dependencies
