@@ -1,0 +1,14 @@
+# Throwaway Azure stack for previewing changes. Deploy with:
+#   defang compose up -s preview -f compose.preview.yaml
+#
+# No AZURE_CLIENT_ID: that is the CI user-assigned identity. Run locally and the
+# Azure CLI login is used instead.
+#
+# DEFANG_MODE=affordable, not balanced: balanced is gated by subscription tier
+# ("this recipe is not available for your tier"), and a preview wants the cheap
+# shape anyway.
+AZURE_LOCATION="westus"
+AZURE_SUBSCRIPTION_ID="f311c4db-e998-4c94-906c-7e2637303a05"
+AZURE_TENANT_ID="12c0f515-fa47-402f-9982-de7646d3cb28"
+DEFANG_PROVIDER=azure
+DEFANG_MODE=affordable
