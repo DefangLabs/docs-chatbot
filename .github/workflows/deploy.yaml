@@ -21,59 +21,6 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v5
 
-      - name: Configure AWS Credentials for CI
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-west-2
-          role-to-assume: arn:aws:iam::488659951590:role/ci-role-d4fe904 # ciRoleArn from defang-io/infrastructure stack
-
-      - name: Configure AWS Credentials for Corp Website Account
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-chaining: true
-          role-duration-seconds: 3600
-          role-to-assume: arn:aws:iam::407839483216:role/admin
-
-      - name: Ensure Bedrock model access
-        run: |
-          set -euo pipefail
-
-          # The MODEL the app talks to is an inference profile ("us.anthropic.<id>");
-          # the agreement is against the bare foundation-model id underneath it.
-          profile=$(grep -oP '^\s*MODEL:\s*"\K[^"]+' compose.yaml)
-          model=${profile#us.}
-          echo "compose MODEL=$profile -> foundation model $model"
-
-          # Anthropic is the one Bedrock provider that still needs an explicit
-          # per-account agreement; without it every request fails at RUNTIME with
-          # AccessDenied about aws-marketplace:Subscribe, because Bedrock tries to
-          # auto-subscribe using the ECS task role (which cannot, and should not).
-          # The "us." profile can route to any of its regions, so cover all of them.
-          for region in us-east-1 us-east-2 us-west-2; do
-            status=$(aws bedrock get-foundation-model-availability --region "$region" \
-              --model-id "$model" --query 'agreementAvailability.status' --output text)
-            if [ "$status" = "AVAILABLE" ]; then
-              echo "$region: already subscribed"
-              continue
-            fi
-
-            echo "$region: no agreement ($status) - subscribing"
-            offer=$(aws bedrock list-foundation-model-agreement-offers --region "$region" \
-              --model-id "$model" --query 'offers[0].offerToken' --output text)
-            aws bedrock create-foundation-model-agreement --region "$region" \
-              --model-id "$model" --offer-token "$offer"
-
-            for _ in $(seq 1 30); do
-              status=$(aws bedrock get-foundation-model-availability --region "$region" \
-                --model-id "$model" --query 'agreementAvailability.status' --output text)
-              if [ "$status" = "AVAILABLE" ]; then break; fi
-              sleep 10
-            done
-            [ "$status" = "AVAILABLE" ] || { echo "::error::$region: still $status after subscribing"; exit 1; }
-            echo "$region: subscribed"
-          done
-
       - name: Set up cache for pip dependencies
         uses: actions/cache@v4
         with:
@@ -92,12 +39,19 @@ jobs:
         working-directory: ./app
         run: python3 test_intercom.py
 
+      # No cloud-credential step: the Defang CLI exchanges this job's GitHub Actions OIDC
+      # token for Azure credentials itself, using AZURE_CLIENT_ID / AZURE_TENANT_ID /
+      # AZURE_SUBSCRIPTION_ID from .defang/production. Requires a federated credential for
+      # subject repo:DefangLabs/docs-chatbot:environment:production on that client ID
+      # (added in defang-mvp's pulumi/infrastructure, see DefangLabs/docs-chatbot#126).
       - name: Deploy
         uses: DefangLabs/defang-github-action@v2
         with:
           cli-version: nightly
           config-env-vars: ASK_TOKEN OPENAI_API_KEY REBUILD_TOKEN SECRET_KEY SEGMENT_WRITE_KEY DISCORD_APP_ID DISCORD_TOKEN DISCORD_PUBLIC_KEY INTERCOM_TOKEN INTERCOM_ADMIN_ID
-          provider: aws
+          project: docs-chatbot
+          stack: production
+          provider: azure
           allow-upgrade: true
 
         env:
