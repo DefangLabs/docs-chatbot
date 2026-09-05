@@ -282,7 +282,10 @@ class RAGSystem:
                 model=os.getenv("MODEL"),
                 messages=messages,
                 temperature=0.25,
-                max_tokens=2048,
+                # GPT-5.x rejects max_tokens ("Unsupported parameter: 'max_tokens' is
+                # not supported with this model. Use 'max_completion_tokens' instead.").
+                # LiteLLM runs with --drop_params, so this stays safe on Bedrock too.
+                max_completion_tokens=2048,
                 # Claude 4.5+ on Bedrock rejects temperature and top_p together
                 # ("`temperature` and `top_p` cannot both be specified for this
                 # model"), so send only temperature. top_p=1 was a no-op anyway.
@@ -293,6 +296,12 @@ class RAGSystem:
             for chunk in stream:
                 try:
                     logging.debug(f"Received chunk: {chunk}")
+                    # Azure OpenAI opens the stream with a chunk carrying only
+                    # prompt_filter_results and an empty "choices" list, and emits
+                    # further choice-less chunks for content filtering. Indexing
+                    # [0] on those raises IndexError and aborts the answer.
+                    if not chunk["choices"]:
+                        continue
                     content = chunk["choices"][0]["delta"].get("content", "")
                     collected_messages.append(content)
                     yield content

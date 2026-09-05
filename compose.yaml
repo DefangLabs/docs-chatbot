@@ -36,8 +36,12 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:5050/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 240s
+      # Azure Container Apps caps a probe's InitialDelaySeconds at 60 and Defang maps
+      # start_period onto it, so 240s fails the deploy outright. Keep the startup
+      # budget inside that limit (60 + 10*30 = 360s); ECS treats start_period as a
+      # grace window, so this stays equivalent there.
+      retries: 10
+      start_period: 60s
     depends_on:
       - redis
     models:
