@@ -50,6 +50,9 @@ class RAGSystem:
                 self.doc_about_embeddings_timestamp = os.path.getmtime(
                     self.DOC_ABOUT_EMBEDDINGS_PATH
                 )
+                self.knowledge_base_timestamp = os.path.getmtime(
+                    self.knowledge_base_path
+                )
                 logging.info(
                     f"Cache loaded - doc_embeddings timestamp: {self.doc_embeddings_timestamp}, doc_about_embeddings timestamp: {self.doc_about_embeddings_timestamp}"
                 )
@@ -96,6 +99,7 @@ class RAGSystem:
             self.doc_about_embeddings_timestamp = os.path.getmtime(
                 self.DOC_ABOUT_EMBEDDINGS_PATH
             )
+            self.knowledge_base_timestamp = os.path.getmtime(self.knowledge_base_path)
 
         logging.info("Embeddings rebuilt successfully.")
 
@@ -163,10 +167,12 @@ class RAGSystem:
                 current_times = [
                     os.path.getmtime(self.DOC_EMBEDDINGS_PATH),
                     os.path.getmtime(self.DOC_ABOUT_EMBEDDINGS_PATH),
+                    os.path.getmtime(self.knowledge_base_path),
                 ]
                 stored_times = [
                     self.doc_embeddings_timestamp,
                     self.doc_about_embeddings_timestamp,
+                    self.knowledge_base_timestamp,
                 ]
 
                 # update cache if timestamps are different from out last load
@@ -175,21 +181,24 @@ class RAGSystem:
 
             except (OSError, FileNotFoundError, PermissionError):
                 logging.warning("Cache files inaccessible, rebuilding...")
-                self.rebuild_embeddings()
+                self.rebuild_embeddings(self.load_knowledge_base())
 
             return func(self, *args, **kwargs)
 
         return wrapper
 
     def _reload_cache(self):
-        self.doc_embeddings = np.load(self.DOC_EMBEDDINGS_PATH)
-        self.doc_about_embeddings = np.load(self.DOC_ABOUT_EMBEDDINGS_PATH)
+        with self._update_lock:
+            self.doc_embeddings = np.load(self.DOC_EMBEDDINGS_PATH)
+            self.doc_about_embeddings = np.load(self.DOC_ABOUT_EMBEDDINGS_PATH)
+            self.knowledge_base = self.load_knowledge_base()
 
-        # update our timestamps of the cached files
-        self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
-        self.doc_about_embeddings_timestamp = os.path.getmtime(
-            self.DOC_ABOUT_EMBEDDINGS_PATH
-        )
+            # update our timestamps of the cached files
+            self.doc_embeddings_timestamp = os.path.getmtime(self.DOC_EMBEDDINGS_PATH)
+            self.doc_about_embeddings_timestamp = os.path.getmtime(
+                self.DOC_ABOUT_EMBEDDINGS_PATH
+            )
+            self.knowledge_base_timestamp = os.path.getmtime(self.knowledge_base_path)
 
     @cache_check
     def retrieve(
