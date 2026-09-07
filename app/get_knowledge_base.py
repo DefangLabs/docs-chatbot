@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 
+from atomicwrites import atomic_write
 from git import Repo
 
 kb_file_path = "./data/knowledge_base.json"
@@ -189,7 +190,7 @@ def recursive_parse_directory(root_dir):
         else:
             parse_markdown_file_to_json(kb_data, id, file_path)
 
-    with open(kb_file_path, "w") as kb_file:
+    with atomic_write(kb_file_path, mode="w", overwrite=True) as kb_file:
         json.dump(kb_data, kb_file, indent=2)
 
 
