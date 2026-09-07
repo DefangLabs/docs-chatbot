@@ -1,0 +1,34 @@
+# Preview overlay: a throwaway Azure stack for testing changes before they reach
+# production. Deploy with:
+#
+#   defang compose up -s <name> -f compose.preview.yaml
+#
+# It deliberately does NOT include compose.yaml wholesale. `extends` pulls in only
+# the services a preview should run, which is how discord-bot is left out: it holds
+# the live Discord token and a second copy would answer real users alongside
+# production. Compose overlays can add and change keys but cannot delete a service,
+# so selecting services here is the only way to drop one.
+services:
+  app:
+    extends:
+      file: compose.yaml
+      service: app
+    # Never claim the production hostname. Azure's DNS writer only touches Azure
+    # zones, so it would silently skip this anyway, but a preview must not race
+    # production for the certificate either. Empty string clears the inherited value.
+    domainname: ""
+
+  redis:
+    extends:
+      file: compose.yaml
+      service: redis
+
+models:
+  # On Azure the AI Foundry deployment is named after the SERVICE, while Defang
+  # wires the model ALIAS into MODEL — so they must match or every request fails
+  # with DeploymentNotFound. Once pulumi-defang#536 ships (the provider then reads
+  # the alias from the service's own --alias) this can become "chat-default", which
+  # is portable across clouds. The alias only picks chat vs embedding, so "llm" is
+  # a valid chat model either way.
+  llm:
+    model: llm
