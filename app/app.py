@@ -28,6 +28,7 @@ from intercom import (
 from rag_system import RAGSystem
 from segment import analytics
 from utils import generate
+from werkzeug.utils import safe_join
 
 # Configure logging
 logging.basicConfig(
@@ -184,8 +185,9 @@ def download_file(name):
     data_dir = os.path.join(app.root_path, "data")
     accepts_gzip = "gzip" in request.headers.get("Accept-Encoding", "")
     gz_name = name + ".gz"
+    gz_path = safe_join(data_dir, gz_name)
 
-    if accepts_gzip and os.path.exists(os.path.join(data_dir, gz_name)):
+    if accepts_gzip and gz_path and os.path.exists(gz_path):
         mimetype, _ = mimetypes.guess_type(name)
         response = send_from_directory(
             data_dir,
