@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import mimetypes
 import os
 import subprocess
 import threading
@@ -27,6 +28,7 @@ from intercom import (
 from rag_system import RAGSystem
 from segment import analytics
 from utils import generate
+from werkzeug.utils import safe_join
 
 # Configure logging
 logging.basicConfig(
@@ -180,7 +182,24 @@ def trigger_rebuild():
 @app.route("/data/<path:name>")
 @csrf.exempt
 def download_file(name):
-    return send_from_directory("data", name, as_attachment=True)
+    data_dir = os.path.join(app.root_path, "data")
+    accepts_gzip = "gzip" in request.headers.get("Accept-Encoding", "")
+    gz_name = name + ".gz"
+    gz_path = safe_join(data_dir, gz_name)
+
+    if accepts_gzip and gz_path and os.path.exists(gz_path):
+        mimetype, _ = mimetypes.guess_type(name)
+        response = send_from_directory(
+            data_dir,
+            gz_name,
+            as_attachment=True,
+            download_name=name,
+            mimetype=mimetype,
+        )
+        response.headers["Content-Encoding"] = "gzip"
+        return response
+
+    return send_from_directory(data_dir, name, as_attachment=True)
 
 
 # Handle incoming webhooks from Intercom

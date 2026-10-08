@@ -1,13 +1,29 @@
+import gzip
 import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 
 from atomicwrites import atomic_write
 from git import Repo
 
 kb_file_path = "./data/knowledge_base.json"
+kb_gz_file_path = kb_file_path + ".gz"
+
+
+def write_compressed_knowledge_base():
+    """Writes a gzip-compressed copy of the knowledge base next to the
+    original, so /data/knowledge_base.json can be served with
+    Content-Encoding: gzip without compressing it on every request.
+    """
+    with (
+        open(kb_file_path, "rb") as kb_file,
+        atomic_write(kb_gz_file_path, mode="wb", overwrite=True) as gz_file,
+        gzip.GzipFile(fileobj=gz_file, mode="wb") as gz,
+    ):
+        shutil.copyfileobj(kb_file, gz)
 
 
 def clone_repository(repo_url, local_dir):
@@ -192,6 +208,8 @@ def recursive_parse_directory(root_dir):
 
     with atomic_write(kb_file_path, mode="w", overwrite=True) as kb_file:
         json.dump(kb_data, kb_file, indent=2)
+
+    write_compressed_knowledge_base()
 
 
 if __name__ == "__main__":
